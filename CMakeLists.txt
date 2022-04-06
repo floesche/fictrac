@@ -5,7 +5,11 @@ project (FicTrac)
 set(FICTRAC_VERSION_MAJOR 2)
 set(FICTRAC_VERSION_MIDDLE 1)
 set(FICTRAC_VERSION_MINOR 1)
- 
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+include(cmake/fictrac_utils.cmake)
+include(cmake/FindPylon.cmake)
+
 # output version info to be included by project
 configure_file (
     "${PROJECT_SOURCE_DIR}/include/fictrac_version.h.in"
@@ -39,7 +43,6 @@ find_package(OpenCV REQUIRED)
 find_package(NLopt CONFIG REQUIRED)
 if(NLopt_FOUND)
     get_filename_component(NLopt_INCLUDE_DIRS "${NLOPT_CONFIG_FILE}/../../../include" REALPATH)
-    # set(NLopt_LIBS ${NLOPT_LIBRARY_DIRS}/lib/nlopt.lib)
     message(STATUS "Found NLopt: ${NLOPT_CONFIG_FILE}")
 else()
     message(FATAL_ERROR "Error! Could not find NLopt lib at ${NLOPT_LIB}!")
@@ -52,11 +55,6 @@ if(MSVC)
     elseif(PGR_USB2)
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PGR_DIR}/lib64/vs2015)
         find_library(PGR_LIB FlyCapture2_v140.lib)
-    elseif(BASLER_USB3)
-        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${BASLER_DIR}/Development/lib/x64)
-		find_library(BASLER_LIB PylonBase_MD_VC120_v5_0.lib)
-		
-		file(GLOB BASLER_LIBS ${BASLER_DIR}/Development/lib/x64/*.lib)
     endif()
     
 else()  # gcc
@@ -66,11 +64,6 @@ else()  # gcc
     elseif(PGR_USB2)
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PGR_DIR})
         find_library(PGR_LIB libflycapture.so)
-    elseif(BASLER_USB3)
-        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${BASLER_DIR}/lib64)
-        find_library(BASLER_LIB libpylonbase.so)       
-        
-		file(GLOB BASLER_LIBS ${BASLER_DIR}/lib64/*.so)
     endif()
 endif()
 
@@ -86,15 +79,10 @@ if(PGR_USB2 OR PGR_USB3)
         message(FATAL_ERROR "Error! Could not find PGR FlyCapture/Spinnaker lib at ${PGR_DIR}!")
     endif()
 elseif(BASLER_USB3)
-    get_filename_component(BASLER_DIR ${BASLER_LIB} DIRECTORY)
-    get_filename_component(BASLER_DIR ${BASLER_DIR} DIRECTORY)    # step up 1 level
-    if(MSVC)
-        get_filename_component(BASLER_DIR ${BASLER_DIR} DIRECTORY)    # step up 1 level
-    endif()
-    if(BASLER_LIB)
-        message(STATUS "Found Basler Pylon lib ${BASLER_LIB}")
+    if(PYLON_FOUND)
+        message(STATUS "Found Basler Pylon lib at ${PYLON_BASE_LIBRARY}")
     else()
-        message(FATAL_ERROR "Error! Could not find Basler Pylon lib at ${BASLER_DIR}!")
+        message(FATAL_ERROR "Error! No Baser Pylon lib found")
     endif()
 endif()
 
@@ -111,7 +99,9 @@ if(PGR_USB2 OR PGR_USB3)
         endif()
     endif()
 elseif(BASLER_USB3)
-    include_directories(${BASLER_DIR}/include)
+    if(PYLON_FOUND)
+        include_directories(${PYLON_INCLUDE_DIRS})
+    endif()
 endif()
 
 # find sources to build
@@ -153,8 +143,12 @@ endif()
 if(PGR_USB2 OR PGR_USB3)
     target_link_libraries(fictrac_core PUBLIC ${PGR_LIB})
 elseif(BASLER_USB3)
-    target_link_libraries(fictrac_core PUBLIC ${BASLER_LIBS})
+    if(PYLON_FOUND)
+        target_link_libraries(fictrac_core PUBLIC ${PYLON_LIBRARIES})
+    endif()
 endif()
+
+
 
 target_link_libraries(configGui fictrac_core)
 add_dependencies(configGui fictrac_core)
