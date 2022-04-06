@@ -19,59 +19,65 @@ using namespace Pylon;
 
 BaslerSource::BaslerSource(int index)
 {
-    try {
-        PylonInitialize();
-        // create an instant camera object
+    PylonInitialize();
+    LOG("Pylon initialized");
+
+    // create an instant camera object
+    if (!_cam.IsPylonDeviceAttached()){
+        LOG("Attach camera");
         _cam.Attach(CTlFactory::GetInstance().CreateFirstDevice());
-
-        LOG("Opening Basler camera device: %s", _cam.GetDeviceInfo().GetModelName());
-
-        // Allow all the names in the namespace GenApi to be used without qualification.
-        using namespace GenApi;
-
-        // Get the camera control object.
-        INodeMap &control = _cam.GetNodeMap();
-
-        // Start acquisition
-        _cam.StartGrabbing();
-
-        // Get some params
-        const CIntegerPtr camWidth = control.GetNode("Width");
-        const CIntegerPtr camHeight = control.GetNode("Height");
-
-        _width = camWidth->GetValue();
-        _height = camHeight->GetValue();
-        _fps = getFPS();
-
-        LOG("Basler camera initialised (%dx%d @ %.3f fps)!", _width, _height, _fps);
-
-
-        _open = true;
-        _live = true;
-
-        }
-        catch (const GenericException &e) {
-        LOG_ERR("Error opening capture device! Error was: %s", e.GetDescription());
     }
+    _cam.Open();
+
+    LOG("Opening Basler camera device: %s %s version %s, serial number %s", 
+        _cam.GetDeviceInfo().GetVendorName().c_str(), 
+        _cam.GetDeviceInfo().GetModelName().c_str(), 
+        _cam.GetDeviceInfo().GetDeviceVersion().c_str(),
+        _cam.GetDeviceInfo().GetSerialNumber().c_str());
+    
+    // Start acquisition
+    if (!_cam.IsGrabbing()) {
+        LOG("Start grabbing");
+        _cam.StartGrabbing();
+    }
+    // Get some params
+    GenApi::INodeMap &control = _cam.GetNodeMap();
+    const GenApi::CIntegerPtr camWidth = control.GetNode("Width");
+    const GenApi::CIntegerPtr camHeight = control.GetNode("Height");
+    _width = camWidth->GetValue();
+    _height = camHeight->GetValue();
+    _fps = getFPS();
+    
+    LOG("Basler camera initialised (%dx%d @ %.3f fps)!", _width, _height, _fps);
+
+    _open = true;
+    _live = true;
 }
 
 BaslerSource::~BaslerSource()
 {
     if (_open) {
+        if (_cam.IsGrabbing())
+            _cam.StopGrabbing();
         try {
+            LOG("Closing and Detaching Camera");
+            _cam.Close();
 	        _cam.DetachDevice();
         }
         catch (const GenericException &e) {
-            LOG_ERR("Error opening capture device! Error was: %s", e.GetDescription());
+            LOG_ERR("Error closing capture device! Error was: %s", e.GetDescription());
         }
         _open = false;
     }
+    PylonTerminate();
+    LOG("Pylon Terminated");
 }
 
 double BaslerSource::getFPS()
 {
-    const GenApi::CFloatPtr camFrameRate = _cam.GetNodeMap().GetNode("ResultingFrameRateAbs");// TODO: test this line
-    return camFrameRate->GetValue();
+    GenApi::INodeMap &control = _cam.GetNodeMap();
+    const GenApi::CFloatPtr camFPS = control.GetNode("ResultingFrameRate");
+    return camFPS->GetValue();
 }
 
 bool BaslerSource::setFPS(double fps)
@@ -130,6 +136,7 @@ bool BaslerSource::grab(cv::Mat& frame)
     try {
         // Convert image
         Pylon::CImageFormatConverter formatConverter;
+        formatConverter.OutputPixelFormat = Pylon::PixelType_BGR8packed;
         formatConverter.Convert(_pylonImg, _ptrGrabResult);
 
         Mat tmp(_height, _width, CV_8UC3, (uint8_t*)_pylonImg.GetBuffer()); 
