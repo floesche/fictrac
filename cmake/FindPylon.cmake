@@ -124,6 +124,7 @@ elseif(UNIX)
                PATHS ${PYLON_ROOT_SEARCH_PATH}
                PATH_SUFFIXES bin)
 
+  message(STATUS "Pylon config at " ${PYLON_CONFIG})
   if(PYLON_CONFIG)
     execute_process(COMMAND ${PYLON_CONFIG} "--version"
                     OUTPUT_VARIABLE PYLON_VERSION
