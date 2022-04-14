@@ -17,11 +17,16 @@
 
 class BaslerSource : public FrameSource {
 public:
-    BaslerSource(int index=0);
+    BaslerSource(int index=0, int width=400, int height=400);
     ~BaslerSource();
 
     double getFPS();
     bool setFPS(double);
+
+    bool setOffset(int, int);
+
+    bool setFlip(bool, bool);
+    bool setExposureTime(double);
 
     bool rewind() { return false; };
     bool grab(cv::Mat& frame);

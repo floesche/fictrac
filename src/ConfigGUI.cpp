@@ -179,7 +179,42 @@ ConfigGui::ConfigGui(string config_fn)
         #if defined(PGR_USB2) || defined(PGR_USB3)
         _source = std::make_shared<PGRSource>(id);
         #elif defined(BASLER_USB3)
-        _source = std::make_shared<BaslerSource>(id);
+        int src_width = 500;
+        if (!_cfg.getInt("src_width", src_width)){
+        _cfg.add("src_width", src_width);
+    }
+    int src_height = 400;
+    if (!_cfg.getInt("src_height", src_height)){
+        _cfg.add("src_height", src_height);
+    }
+        _source = std::make_shared<BaslerSource>(id, src_width, src_height);
+
+int src_offset_x = 276;
+    if (!_cfg.getInt("src_offset_x", src_offset_x)){
+        _cfg.add("src_offset_x", src_offset_x);
+    }
+    int src_offset_y = 0;
+    if (!_cfg.getInt("src_offset_y", src_offset_y)){
+        _cfg.add("src_offset_y", src_offset_y);
+    }
+    if (src_offset_x >= 0 && src_offset_y >= 0){
+        _source->setOffset(src_offset_x, src_offset_y);
+    }
+
+    bool src_flip_y = true;
+    if (!_cfg.getBool("src_flip_y", src_flip_y)){
+        _cfg.add("src_flip_y", src_flip_y);
+    }
+    _source->setFlip(false, src_flip_y);
+    
+    double src_exposure_time = 8000;
+    if (!_cfg.getDbl("src_exposure_time", src_exposure_time)){
+        _cfg.add("src_exposure_time", src_exposure_time);
+    }
+    _source->setExposureTime(src_exposure_time);
+
+
+
         #endif // PGR/BASLER
     }
     catch (...) {

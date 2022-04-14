@@ -116,7 +116,16 @@ Trackball::Trackball(string cfg_fn)
 #if defined(PGR_USB2) || defined(PGR_USB3)
         source = make_shared<PGRSource>(id);
 #elif defined(BASLER_USB3)
-        source = make_shared<BaslerSource>(id);
+    int src_width = 500;
+    if (!_cfg.getInt("src_width", src_width)){
+        _cfg.add("src_width", src_width);
+    }
+    int src_height = 400;
+    if (!_cfg.getInt("src_height", src_height)){
+        _cfg.add("src_height", src_height);
+    }
+
+    source = make_shared<BaslerSource>(id, src_width, src_height);
 #endif // PGR/BASLER
     }
     catch (...) {
@@ -139,6 +148,38 @@ Trackball::Trackball(string cfg_fn)
     else {
         _cfg.add("src_fps", src_fps);
     }
+
+#if defined(BASLER_USB3)
+
+    
+    int src_offset_x = 276;
+    if (!_cfg.getInt("src_offset_x", src_offset_x)){
+        _cfg.add("src_offset_x", src_offset_x);
+    }
+    int src_offset_y = 0;
+    if (!_cfg.getInt("src_offset_y", src_offset_y)){
+        _cfg.add("src_offset_y", src_offset_y);
+    }
+    if (src_offset_x >= 0 && src_offset_y >= 0){
+        source->setOffset(src_offset_x, src_offset_y);
+    }
+
+    bool src_flip_y = true;
+    if (!_cfg.getBool("src_flip_y", src_flip_y)){
+        _cfg.add("src_flip_y", src_flip_y);
+    }
+    source->setFlip(false, src_flip_y);
+    
+    double src_exposure_time = 8000;
+    if (!_cfg.getDbl("src_exposure_time", src_exposure_time)){
+        _cfg.add("src_exposure_time", src_exposure_time);
+    }
+    source->setExposureTime(src_exposure_time);
+
+    double myfps = source->getFPS();
+    LOG("FPS is %f", myfps);
+
+#endif // BASLER
 
     /// Create base file name for output files.
     _base_fn = _cfg("output_fn");
