@@ -67,10 +67,10 @@ else()  # gcc
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PGR_DIR})
         find_library(PGR_LIB libflycapture.so)
     elseif(BASLER_USB3)
-        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${BASLER_DIR}/lib64)
-        find_library(BASLER_LIB libpylonbase.so)       
-        
-		file(GLOB BASLER_LIBS ${BASLER_DIR}/lib64/*.so)
+        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${BASLER_DIR}/lib)
+        find_library(BASLER_LIB libpylonbase.so)
+
+		file(GLOB BASLER_LIBS ${BASLER_DIR}/lib/*.so)
     endif()
 endif()
 
