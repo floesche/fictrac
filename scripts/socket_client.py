@@ -4,7 +4,7 @@ import socket
 import select
 
 HOST = '127.0.0.1'  # The (receiving) host IP address (sock_host)
-PORT = ????         # The (receiving) host port (sock_port)
+PORT = 1717         # The (receiving) host port (sock_port)
 
 # TCP
 # Open the connection (ctrl-c / ctrl-break to quit)
