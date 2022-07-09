@@ -24,10 +24,11 @@ public:
 	virtual bool setFPS(double fps);
 	virtual bool rewind();
 	virtual bool grab(cv::Mat& frame);
+	virtual bool setWH(int width, int height);
 
 private:
 	std::shared_ptr<cv::VideoCapture> _cap;
-	cv::Mat _frame_cap;
+	cv::Mat _frame_cap, _frame_flp;
 
     bool _is_image;
 };

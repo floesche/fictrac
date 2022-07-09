@@ -23,6 +23,11 @@ public:
 	virtual bool setOffset(int, int){return false;}
 	virtual bool setExposureTime(double){return false;}
 	virtual bool setFlip(bool, bool){return false;}
+	virtual bool setWH(int width, int height){
+		_width = width; _height = height;
+		return false;
+	}
+
 	virtual bool rewind()=0;
 	virtual bool grab(cv::Mat& frame)=0;
 
