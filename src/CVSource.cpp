@@ -237,7 +237,7 @@ bool CVSource::grab(cv::Mat& frame)
     }
 
     /// FIXME: This is specific to the new PS3 camera. Make it configurable?
-    cv::flip(_frame_flp, frame, 0);
+    cv::flip(_frame_flp, frame, 1);
 
 
 	return true;
