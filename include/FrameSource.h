@@ -20,6 +20,9 @@ public:
         _fps = fps;
         return false;   // we haven't actually done anything
     }
+	virtual bool setOffset(int, int){return false;}
+	virtual bool setExposureTime(double){return false;}
+	virtual bool setFlip(bool, bool){return false;}
 	virtual bool rewind()=0;
 	virtual bool grab(cv::Mat& frame)=0;
 
