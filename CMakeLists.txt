@@ -107,7 +107,15 @@ if(PGR_USB2 OR PGR_USB3)
         if(PGR_USB2)
             include_directories(${PGR_DIR}/include/flycapture)   # for ubuntu default install dir
         elseif(PGR_USB3)
-            include_directories(${PGR_DIR}/include/spinnaker)   # for ubuntu default install dir
+            if (EXISTS "${PGR_DIR}/include/spinnaker/Spinnaker.h")
+                message(STATUS "Found PGR headers at ${PGR_DIR}/include/spinnaker/")
+                include_directories(${PGR_DIR}/include/spinnaker)   # for old spinnaker versions and ubuntu default install dir
+            elseif (EXISTS "${PGR_DIR}/include/Spinnaker.h")
+                message(STATUS "Found PGR headers at ${PGR_DIR}/include/")
+                include_directories(${PGR_DIR}/include)             # https://github.com/rjdmoore/fictrac/issues/13
+            else()
+                message(FATAL_ERROR "Error: cannot find Spinnaker.h at expected locations within ${PGR_DIR}")
+            endif()
         endif()
     endif()
 elseif(BASLER_USB3)
