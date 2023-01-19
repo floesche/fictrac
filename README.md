@@ -49,19 +49,25 @@ The FicTrac source code can be built for both Windows and Linux (e.g. Ubuntu) op
         1. [Cmake build system](https://cmake.org/download/) (Windows win64-x64 Installer)
         2. If you don't already have Visual Studio (C++ workflow) installed, you will need to install the [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019).
     2. Linux only:
-        1. Run the following from terminal to install necessary build tools and dependencies (on Ubuntu-22.04 `libavresample-dev` is not available, but apparently also not needed):
-        ```
+        1. Run the following from terminal to install necessary build tools and dependencies:
+        For Debian-based distros:
+        (on Ubuntu-22.04 `libavresample-dev` is not available, but apparently also not needed):
+        ```bash
         sudo apt-get install gcc g++ git cmake curl unzip tar yasm pkg-config libgtk2.0-dev libavformat-dev libavcodec-dev libavresample-dev libswscale-dev libopencv-dev
+        ```
+        For Arch-based distros:
+        ```bash
+        pacman -S gcc git cmake curl unzip tar yasm pkgconf gtk2 libavresample ffmpeg opencv vtk hdf5 glew openmpi fmt
         ```
     3. (Windows and Linux) Clone or download the [Vcpkg](https://github.com/Microsoft/vcpkg) repository and then follow the guide to install (make sure to perform the bootstrap and integration steps).
     4. Using Vcpkg, install remaining dependencies:
 ```
 [Windows] .\vcpkg install opencv[ffmpeg]:x64-windows nlopt:x64-windows boost-asio:x64-windows ffmpeg[x264]:x64-windows
-[Linux] ./vcpkg install nlopt:x64-linux boost-asio:x64-linux
+[Linux] ./vcpkg/vcpkg install nlopt:x64-linux boost-asio:x64-linux
 ```
 2. Clone or download the FicTrac repository, then navigate to that folder, open a terminal, and create a build directory:
-```
-git clone https://github.com/rjdmoore/fictrac.git
+```bash
+git clone https://github.com/floesche/fictrac.git
 cd fictrac
 mkdir build
 cd build
