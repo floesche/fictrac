@@ -87,9 +87,8 @@ BaslerSource::~BaslerSource()
 
 double BaslerSource::getFPS()
 {
-    GenApi::INodeMap &control = _cam.GetNodeMap();
-    const GenApi::CFloatPtr camFPS = control.GetNode("ResultingFrameRate");
-    return camFPS->GetValue();
+    const GenApi::CFloatPtr camFrameRate = _cam.GetNodeMap().GetNode("ResultingFrameRate");
+    return camFrameRate->GetValue();
 }
 
 bool BaslerSource::setFPS(double fps)
@@ -221,7 +220,7 @@ bool BaslerSource::grab(cv::Mat& frame)
     try {
         // Convert image
         Pylon::CImageFormatConverter formatConverter;
-        formatConverter.OutputPixelFormat = Pylon::PixelType_BGR8packed;
+        formatConverter.OutputPixelFormat = PixelType_BGR8packed;
         formatConverter.Convert(_pylonImg, _ptrGrabResult);
 
         Mat tmp(_height, _width, CV_8UC3, (uint8_t*)_pylonImg.GetBuffer()); 
