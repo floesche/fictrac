@@ -3,8 +3,8 @@ project (FicTrac)
 
 # The version number.
 set(FICTRAC_VERSION_MAJOR 2)
-set(FICTRAC_VERSION_MIDDLE 1)
-set(FICTRAC_VERSION_MINOR 1)
+set(FICTRAC_VERSION_MIDDLE 2)
+set(FICTRAC_VERSION_MINOR 0)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(cmake/fictrac_utils.cmake)
@@ -114,6 +114,15 @@ endif()
 
 # find sources to build
 file(GLOB LIBFICTRAC_SRCS ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
+# Remove files that are camera SDK specific from list of sources.
+if(PGR_USB2)
+    list(REMOVE_ITEM LIBFICTRAC_SRCS ${PROJECT_SOURCE_DIR}/src/BaslerSource.cpp ${PROJECT_SOURCE_DIR}/src/FSPSource.cpp)
+elseif(PGR_USB3)
+    list(REMOVE_ITEM LIBFICTRAC_SRCS ${PROJECT_SOURCE_DIR}/src/BaslerSource.cpp ${PROJECT_SOURCE_DIR}/src/FFCSource.cpp)
+elseif(BASLER_USB3)
+    list(REMOVE_ITEM LIBFICTRAC_SRCS ${PROJECT_SOURCE_DIR}/src/FSPSource.cpp ${PROJECT_SOURCE_DIR}/src/FFCSource.cpp)
+endif()
 
 # add targets
 add_library(fictrac_core STATIC ${LIBFICTRAC_SRCS})
