@@ -16,8 +16,10 @@
 #include "BasicRemapper.h"
 #include "misc.h"
 #include "CVSource.h"
-#if defined(PGR_USB2) || defined(PGR_USB3)
-#include "PGRSource.h"
+#if defined(PGR_USB2) 
+#include "FFCSource.h"
+#elif defined(PGR_USB3)
+#include "FSPSource.h"
 #elif defined(BASLER_USB3)
 #include "BaslerSource.h"
 #endif // PGR/BASLER
