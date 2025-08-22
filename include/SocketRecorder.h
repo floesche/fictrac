@@ -17,8 +17,8 @@
 #else	// UDP sockets
 
 #include "RecorderInterface.h"
+#include "boost_compatibility.h"
 
-#include <boost/asio.hpp>
 
 class SocketRecorder : public RecorderInterface
 {
@@ -35,7 +35,7 @@ private:
     std::string _host;
     int _port;
 
-    boost::asio::io_service _io_service;
+    asio_io _io_context;
     boost::asio::ip::udp::socket _socket;
     boost::asio::ip::udp::endpoint _endpoint;
 };

@@ -9,6 +9,7 @@
 #include "Logger.h"
 
 #include <boost/asio.hpp>
+#include "boost_compatibility.h"
 #include <boost/exception/diagnostic_information.hpp>
 
 #include <iostream>
@@ -50,7 +51,7 @@ bool SerialRecorder::openRecord(std::string port_baud)
 
     // open serial port
     try {
-        asio::io_service io;
+        asio_io io;
         _port = make_shared<asio::serial_port>(io);
         _port->open(_port_name);
         //_port->set_option(asio::serial_port_base::baud_rate(baud));
