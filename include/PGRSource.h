@@ -19,6 +19,22 @@
 
 #include <opencv2/opencv.hpp>
 
+#if defined(PGR_USB3)
+// Include System.h to get version macros
+#include <System.h>
+
+// Compile-time version detection macros
+#define SPINNAKER_VERSION_AT_LEAST(major, minor) \
+    ((FLIR_SPINNAKER_VERSION_MAJOR > (major)) || \
+     (FLIR_SPINNAKER_VERSION_MAJOR == (major) && FLIR_SPINNAKER_VERSION_MINOR >= (minor)))
+
+// Forward declaration for version-specific helper functions
+namespace {
+    Spinnaker::ImagePtr convertImageCompat(const Spinnaker::ImagePtr& srcImage, Spinnaker::PixelFormatEnums destFormat);
+    void setDefaultColorProcessingCompat();
+}
+#endif // PGR_USB3
+
 class PGRSource : public FrameSource {
 public:
 	PGRSource(int index=0);

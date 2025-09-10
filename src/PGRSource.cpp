@@ -14,11 +14,40 @@
 #if defined(PGR_USB3)
 #include "SpinGenApi/SpinnakerGenApi.h"
 using namespace Spinnaker;
+
 #elif defined(PGR_USB2)
 using namespace FlyCapture2;
 #endif // PGR_USB2/3
 
 using cv::Mat;
+
+#if defined(PGR_USB3)
+namespace {
+    // Handles API changes between different Spinnaker SDK versions
+    ImagePtr convertImageCompat(const ImagePtr& srcImage, PixelFormatEnums destFormat) {
+        
+#if SPINNAKER_VERSION_AT_LEAST(3, 0)
+        ImageProcessor processor;
+        processor.SetColorProcessing(SPINNAKER_COLOR_PROCESSING_ALGORITHM_NEAREST_NEIGHBOR);
+        return processor.Convert(srcImage, destFormat);
+        
+#else
+        return srcImage->Convert(destFormat, NEAREST_NEIGHBOR);
+#endif
+    }
+
+    void setDefaultColorProcessingCompat() {
+        // Log the Spinnaker version for debugging purposes
+                
+#if SPINNAKER_VERSION_AT_LEAST(3, 0)
+#elif SPINNAKER_VERSION_AT_LEAST(2, 0)
+            Image::SetDefaultColorProcessing(SPINNAKER_COLOR_PROCESSING_ALGORITHM_NEAREST_NEIGHBOR);
+#else
+            Image::SetDefaultColorProcessing(ColorProcessingAlgorithm::NEAREST_NEIGHBOR);
+#endif
+    }
+}
+#endif // PGR_USB3
 
 PGRSource::PGRSource(int index)
 {
@@ -121,7 +150,7 @@ PGRSource::PGRSource(int index)
             return;
         }
 
-        Image::SetDefaultColorProcessing(ColorProcessingAlgorithm::NEAREST_NEIGHBOR);
+        setDefaultColorProcessingCompat();
 
         // capture test image
         Image testImg;
@@ -269,7 +298,7 @@ bool PGRSource::grab(cv::Mat& frame)
 
     try {
         // Convert image
-        ImagePtr bgr_image = pgr_image->Convert(PixelFormat_BGR8, NEAREST_NEIGHBOR);
+        ImagePtr bgr_image = convertImageCompat(pgr_image, PixelFormat_BGR8);
 
         Mat tmp(_height, _width, CV_8UC3, bgr_image->GetData(), bgr_image->GetStride());
         tmp.copyTo(frame);
