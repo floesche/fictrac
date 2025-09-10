@@ -36,6 +36,10 @@
 *.db
 *.tlog
 
+# Dependencies
+vcpkg_installed/
+vcpkg-configuration.json
+
 # Build dirs
 vsbuild/
 gccbuild/

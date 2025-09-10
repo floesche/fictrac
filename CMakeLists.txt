@@ -12,6 +12,8 @@ configure_file (
     "${PROJECT_SOURCE_DIR}/include/fictrac_version.h"
 )
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+
 if (WIN32)
 	message(STATUS "Building FicTrac for Windows")
 elseif (UNIX)
@@ -22,6 +24,31 @@ endif()
 set(OPENCV_DIR "." CACHE PATH "Path to OpenCV folder containing OpenCVConfig.cmake")
 set(NLOPT_DIR "." CACHE PATH "Path to NLopt folder containing NLoptConfig.cmake")
 
+# Add vcpkg installed packages to CMAKE_PREFIX_PATH
+if(EXISTS "${PROJECT_SOURCE_DIR}/vcpkg_installed")
+    if(WIN32)
+        list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows")
+        list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/share")
+        # Add vcpkg share directories to CMAKE_MODULE_PATH for Find*.cmake files
+        file(GLOB VCPKG_SHARE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/*")
+        foreach(SHARE_DIR ${VCPKG_SHARE_DIRS})
+            if(IS_DIRECTORY ${SHARE_DIR})
+                list(APPEND CMAKE_MODULE_PATH ${SHARE_DIR})
+            endif()
+        endforeach()
+    else()
+        list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-linux")
+        list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-linux/share")
+        # Add vcpkg share directories to CMAKE_MODULE_PATH for Find*.cmake files
+        file(GLOB VCPKG_SHARE_DIRS "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-linux/share/*")
+        foreach(SHARE_DIR ${VCPKG_SHARE_DIRS})
+            if(IS_DIRECTORY ${SHARE_DIR})
+                list(APPEND CMAKE_MODULE_PATH ${SHARE_DIR})
+            endif()
+        endforeach()
+    endif()
+endif()
+
 # output dirs
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -31,8 +58,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 option(PGR_USB3 "Use Spinnaker SDK to capture from PGR USB3 cameras" OFF) # Disabled by default
 option(PGR_USB2 "Use FlyCapture SDK to capture from PGR USB2 cameras" OFF) # Disabled by default
 option(BASLER_USB3 "Use Pylon SDK to capture from Basler USB3 cameras" OFF) # Disabled by default
+
 if(PGR_USB3)
-    set(PGR_DIR "." CACHE PATH "Path to PGR Spinnaker SDK folder")
+    find_package(PGR REQUIRED)
 elseif(PGR_USB2)
     set(PGR_DIR "." CACHE PATH "Path to PGR FlyCapture SDK folder")
 elseif(BASLER_USB3)
@@ -45,7 +73,6 @@ find_package(OpenCV REQUIRED)
 find_package(NLopt CONFIG REQUIRED)
 if(NLopt_FOUND)
     get_filename_component(NLopt_INCLUDE_DIRS "${NLOPT_CONFIG_FILE}/../../../include" REALPATH)
-    # set(NLopt_LIBS ${NLOPT_LIBRARY_DIRS}/lib/nlopt.lib)
     message(STATUS "Found NLopt: ${NLOPT_CONFIG_FILE}")
 else()
     message(FATAL_ERROR "Error! Could not find NLopt lib at ${NLOPT_LIB}!")
@@ -80,18 +107,7 @@ else()  # gcc
     endif()
 endif()
 
-if(PGR_USB2 OR PGR_USB3)
-    get_filename_component(PGR_DIR ${PGR_LIB} DIRECTORY)
-    get_filename_component(PGR_DIR ${PGR_DIR} DIRECTORY)    # step up 1 level
-    if(WIN32)
-        get_filename_component(PGR_DIR ${PGR_DIR} DIRECTORY)    # step up 1 level
-    endif()
-    if(PGR_LIB)
-        message(STATUS "Found PGR FlyCapture/Spinnaker lib ${PGR_LIB}")
-    else()
-        message(FATAL_ERROR "Error! Could not find PGR FlyCapture/Spinnaker lib at ${PGR_DIR}!")
-    endif()
-elseif(BASLER_USB3)
+if(BASLER_USB3)
     get_filename_component(BASLER_DIR ${BASLER_LIB} DIRECTORY)
     get_filename_component(BASLER_DIR ${BASLER_DIR} DIRECTORY)    # step up 1 level
     if(WIN32)
@@ -108,7 +124,8 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS} ${NLopt_INCLUDE_DIRS})
 if(PGR_USB2 OR PGR_USB3)
     if(WIN32)
-        include_directories(${PGR_DIR}/include)
+        # include_directories(${PGR_DIR}/include)
+        include_directories(${PGR_INCLUDE_DIRS})
     else()
         if(PGR_USB2)
             include_directories(${PGR_DIR}/include/flycapture)   # for ubuntu default install dir
@@ -157,7 +174,8 @@ else()  # gcc
     target_link_libraries(fictrac_core PUBLIC pthread)
 endif()
 if(PGR_USB2 OR PGR_USB3)
-    target_link_libraries(fictrac_core PUBLIC ${PGR_LIB})
+    # target_link_libraries(fictrac_core PUBLIC ${PGR_LIB})
+    target_link_libraries(fictrac_core PUBLIC ${PGR_LIBRARIES})
 elseif(BASLER_USB3)
     target_link_libraries(fictrac_core PUBLIC ${BASLER_LIBS})
 endif()
@@ -166,8 +184,3 @@ target_link_libraries(configGui fictrac_core)
 add_dependencies(configGui fictrac_core)
 target_link_libraries(fictrac fictrac_core)
 add_dependencies(fictrac fictrac_core)
-
-# if(WIN32)
-	# set_target_properties(configGui PROPERTIES LINK_FLAGS /LTCG)
-	# set_target_properties(fictrac PROPERTIES LINK_FLAGS /LTCG)
-# endif()

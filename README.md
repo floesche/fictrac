@@ -101,7 +101,7 @@ After installation, you may need to close and re-open your Powershell terminal i
 
 <details>
     <summary>Alternate (old) installation via Vcpkg for Windows/Linux</summary>
-These instructions have been tested for Windows 10, Ubuntu 18.04, and Ubuntu 20.04.
+These instructions have been tested for Windows 10, Windows 11, Ubuntu 18.04, and Ubuntu 20.04.
 
 1. Download and install required build tools and dependencies:
     1. Windows only: 
@@ -113,19 +113,29 @@ These instructions have been tested for Windows 10, Ubuntu 18.04, and Ubuntu 20.
         sudo apt-get install gcc g++ git cmake curl unzip tar yasm pkg-config libgtk2.0-dev libavformat-dev libavcodec-dev libavresample-dev libswscale-dev libopencv-dev
         ```
     3. (Windows and Linux) Clone or download the [Vcpkg](https://github.com/Microsoft/vcpkg) repository and then follow the guide to install (make sure to perform the bootstrap and integration steps).
-    4. Using Vcpkg, install remaining dependencies:
+    4. Using Vcpkg, install remaining dependencies or use the preconfigured `vcpkg install` command after cloning fictrac:
 ```
 [Windows] .\vcpkg install opencv[ffmpeg]:x64-windows nlopt:x64-windows boost-asio:x64-windows ffmpeg[x264]:x64-windows
 [Linux] ./vcpkg install nlopt:x64-linux boost-asio:x64-linux
 ```
-2. Clone or download the FicTrac repository, then navigate to that folder, open a terminal, and create a build directory:
+2. Clone or download the FicTrac repository, then navigate to that folder and open a terminal.
 ```
 git clone https://github.com/rjdmoore/fictrac.git
 cd fictrac
+```
+3. Install vcpkg dependencies if you skipped the step above. This can take a long time.
+```PowerShell
+vcpkg install
+```
+
+4. Create a build directory and enter it.
+
+```
 mkdir build
 cd build
 ```
-3. Run Cmake to prepare the necessary build files for FicTrac. Here, we will need to provide the path to the Cmake toolchain file that was installed by Vcpkg (this path is printed to terminal when you run the Vcpkg system-wide integration step).
+
+5. Run Cmake to prepare the necessary build files for FicTrac. Here, we will need to provide the path to the Cmake toolchain file that was installed by Vcpkg (this path is printed to terminal when you run the Vcpkg system-wide integration step).
 ```
 [Windows] cmake -A x64 -D CMAKE_TOOLCHAIN_FILE=C:\path\to\vcpkg\scripts\buildsystems\vcpkg.cmake ..
 [Linux] cmake -D CMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake ..
@@ -143,9 +153,6 @@ If you encounter issues during the build process, try simply re-executing the st
 
 Remember to update (i.e. clone) and re-build FicTrac occasionally, as the program is still under development and fixes and improvements are being made continuously.
 
-<!---| | | | | |-->
-<!---| --- | --- | --- | --- | --- |-->
-<!---| Build status | Windows | [![Build Status](https://dev.azure.com/rjdmoore/FicTrac/_apis/build/status/rjdmoore.fictrac?branchName=master&jobName=Windows)](https://dev.azure.com/rjdmoore/FicTrac/_build/latest?definitionId=1&branchName=master) | Linux | [![Build Status](https://dev.azure.com/rjdmoore/FicTrac/_apis/build/status/rjdmoore.fictrac?branchName=master&jobName=Linux)](https://dev.azure.com/rjdmoore/FicTrac/_build/latest?definitionId=1&branchName=master) |-->
 
 #### USB2/3 camera installation
 

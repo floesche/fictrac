@@ -1,0 +1,18 @@
+{
+  "dependencies": [
+    "boost-asio",
+    "nlopt",
+    {
+      "name": "opencv",
+      "features": [
+        "ffmpeg"
+      ]
+    },
+    {
+      "name": "ffmpeg",
+      "features": [
+        "x264"
+      ]
+    }
+  ]
+}
