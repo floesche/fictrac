@@ -385,15 +385,15 @@ Trackball::Trackball(string cfg_fn, string src_override)
     }
 
     /// Init optimisers.
-    _localOpt = make_unique<Localiser>(
+    _localOpt = std::unique_ptr<Localiser>(new Localiser(
         NLOPT_LN_BOBYQA, bound, tol, max_evals,
         _sphere_model, _sphere_map,
-        _roi_mask, _p1s_lut);
+        _roi_mask, _p1s_lut));
 
-    _globalOpt = make_unique<Localiser>(
+    _globalOpt = std::unique_ptr<Localiser>(new Localiser(
         NLOPT_GN_CRS2_LM, CM_PI, tol, 1e5,
         _sphere_model, _sphere_map,
-        _roi_mask, _p1s_lut);
+        _roi_mask, _p1s_lut));
 
     /// Output.
     string data_fn = _base_fn + "-" + exec_time + ".dat";

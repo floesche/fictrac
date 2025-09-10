@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.15)
 
 # Set vcpkg toolchain file if not already set
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -177,7 +177,9 @@ endif()
 
 # add compile options
 if(WIN32)
-    target_compile_options(fictrac_core PUBLIC $<$<CONFIG:Release>:/MP /GS /GL /w /WX- /Gy /Zc:wchar_t /O2 /Oi /Zc:inline /fp:precise /MD /EHsc /std:c++17>)
+    target_compile_options(fictrac_core PUBLIC $<$<CONFIG:Release>:/MP /GS /GL /W3 /WX- /Gy /Zc:wchar_t /O2 /Oi /Zc:inline /fp:precise /MD /EHsc /std:c++17>)
+    # Add corresponding linker options for Release builds
+    target_link_options(fictrac_core PUBLIC $<$<CONFIG:Release>:/LTCG>)
 else()  # gcc
     target_compile_options(fictrac_core PUBLIC -Ofast -w -c -fmessage-length=0 -std=c++17 -Wno-unused-function -march=native -MMD)
 endif()
@@ -200,3 +202,9 @@ target_link_libraries(configGui fictrac_core)
 add_dependencies(configGui fictrac_core)
 target_link_libraries(fictrac fictrac_core)
 add_dependencies(fictrac fictrac_core)
+
+# Apply linker options to executables on Windows
+if(WIN32)
+    target_link_options(configGui PUBLIC $<$<CONFIG:Release>:/LTCG>)
+    target_link_options(fictrac PUBLIC $<$<CONFIG:Release>:/LTCG>)
+endif()
