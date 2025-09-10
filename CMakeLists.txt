@@ -239,3 +239,118 @@ if(WIN32)
     target_link_options(configGui PUBLIC $<$<CONFIG:Release>:/LTCG>)
     target_link_options(fictrac PUBLIC $<$<CONFIG:Release>:/LTCG>)
 endif()
+
+# Copy required DLLs to output directory on Windows
+if(WIN32)
+    # Function to copy DLLs for a target
+    function(copy_target_dlls TARGET_NAME)
+        # Copy OpenCV DLLs
+        if(OpenCV_FOUND)
+            foreach(lib ${OpenCV_LIBS})
+                get_target_property(lib_path ${lib} IMPORTED_LOCATION_RELEASE)
+                if(lib_path)
+                    get_filename_component(lib_dir ${lib_path} DIRECTORY)
+                    file(GLOB opencv_dlls "${lib_dir}/../bin/*.dll")
+                    foreach(dll ${opencv_dlls})
+                        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            "${dll}" $<TARGET_FILE_DIR:${TARGET_NAME}>
+                            COMMENT "Copying OpenCV DLL: ${dll}"
+                        )
+                    endforeach()
+                endif()
+            endforeach()
+        endif()
+
+        # Copy NLopt DLLs
+        if(NLopt_FOUND)
+            get_target_property(nlopt_lib NLopt::nlopt IMPORTED_LOCATION_RELEASE)
+            if(nlopt_lib)
+                get_filename_component(nlopt_dir ${nlopt_lib} DIRECTORY)
+                file(GLOB nlopt_dlls "${nlopt_dir}/*.dll")
+                foreach(dll ${nlopt_dlls})
+                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${dll}" $<TARGET_FILE_DIR:${TARGET_NAME}>
+                        COMMENT "Copying NLopt DLL: ${dll}"
+                    )
+                endforeach()
+            endif()
+        endif()
+
+        # Copy PGR/Spinnaker DLLs
+        if(PGR_USB3 AND PGR_LIBRARIES)
+            foreach(lib ${PGR_LIBRARIES})
+                get_filename_component(lib_path ${lib} REALPATH)
+                get_filename_component(lib_dir ${lib_path} DIRECTORY)
+                file(GLOB pgr_dlls "${lib_dir}/*.dll")
+                foreach(dll ${pgr_dlls})
+                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${dll}" $<TARGET_FILE_DIR:${TARGET_NAME}>
+                        COMMENT "Copying PGR DLL: ${dll}"
+                    )
+                endforeach()
+            endforeach()
+        endif()
+
+        # Copy Basler Pylon DLLs
+        if(BASLER_USB3 AND BASLER_LIBS)
+            foreach(lib ${BASLER_LIBS})
+                get_filename_component(lib_path ${lib} REALPATH)
+                get_filename_component(lib_dir ${lib_path} DIRECTORY)
+                file(GLOB basler_dlls "${lib_dir}/*.dll")
+                foreach(dll ${basler_dlls})
+                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${dll}" $<TARGET_FILE_DIR:${TARGET_NAME}>
+                        COMMENT "Copying Basler DLL: ${dll}"
+                    )
+                endforeach()
+            endforeach()
+        endif()
+
+        # Copy vcpkg DLLs if using vcpkg
+        if(DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+            if(EXISTS "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/bin")
+                file(GLOB vcpkg_dlls "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/bin/*.dll")
+                foreach(dll ${vcpkg_dlls})
+                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${dll}" $<TARGET_FILE_DIR:${TARGET_NAME}>
+                        COMMENT "Copying vcpkg DLL: ${dll}"
+                    )
+                endforeach()
+            endif()
+        endif()
+    endfunction()
+
+    # Apply DLL copying to executables
+    copy_target_dlls(configGui)
+    copy_target_dlls(fictrac)
+
+    # Alternative: Use CMake's built-in DLL copying (CMake 3.21+)
+    if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.21")
+        set_property(TARGET configGui PROPERTY 
+            VS_DEBUGGER_ENVIRONMENT "PATH=${CMAKE_PREFIX_PATH}/bin;$ENV{PATH}")
+        set_property(TARGET fictrac PROPERTY 
+            VS_DEBUGGER_ENVIRONMENT "PATH=${CMAKE_PREFIX_PATH}/bin;$ENV{PATH}")
+    endif()
+endif()
+
+# Optional: Create install rules for DLLs
+if(WIN32)
+    install(TARGETS configGui fictrac
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
+    
+    # Install required DLLs
+    if(EXISTS "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/bin")
+        install(DIRECTORY "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/bin/"
+            DESTINATION bin
+            FILES_MATCHING PATTERN "*.dll"
+        )
+    endif()
+endif()
