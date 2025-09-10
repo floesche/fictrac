@@ -1,4 +1,20 @@
 cmake_minimum_required (VERSION 3.5)
+
+# Set vcpkg toolchain file if not already set
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json")
+        # Try to find vcpkg installation
+        find_program(VCPKG_EXECUTABLE vcpkg PATHS $ENV{VCPKG_ROOT}/vcpkg.exe)
+        if(VCPKG_EXECUTABLE)
+            get_filename_component(VCPKG_ROOT ${VCPKG_EXECUTABLE} DIRECTORY)
+            set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+            message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+        else()
+            message(WARNING "vcpkg.json found but vcpkg executable not found. Please set CMAKE_TOOLCHAIN_FILE manually.")
+        endif()
+    endif()
+endif()
+
 project (FicTrac)
 
 # The version number.
