@@ -1,5 +1,11 @@
 cmake_minimum_required (VERSION 3.15)
 
+# Set modern CMake policies
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.15")
+    cmake_policy(SET CMP0091 NEW)  # MSVC runtime library flags
+    cmake_policy(SET CMP0092 NEW)  # MSVC warning flags
+endif()
+
 # Set vcpkg toolchain file if not already set
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json")
@@ -13,6 +19,11 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
             message(WARNING "vcpkg.json found but vcpkg executable not found. Please set CMAKE_TOOLCHAIN_FILE manually.")
         endif()
     endif()
+endif()
+
+# Verify vcpkg integration
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+    message(STATUS "vcpkg integration active")
 endif()
 
 project (FicTrac)
@@ -64,11 +75,6 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/vcpkg_installed")
         endforeach()
     endif()
 endif()
-
-# output dirs
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 # optional build config
 option(PGR_USB3 "Use Spinnaker SDK to capture from PGR USB3 cameras" OFF) # Disabled by default
@@ -136,30 +142,48 @@ if(BASLER_USB3)
     endif()
 endif()
 
-# add include dirs
-include_directories(${PROJECT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS} ${NLopt_INCLUDE_DIRS})
+# add include dirs (will be moved to target-specific includes after target creation)
+# include_directories(${PROJECT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS} ${NLopt_INCLUDE_DIRS})
+set(FICTRAC_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS} ${NLopt_INCLUDE_DIRS})
 if(PGR_USB2 OR PGR_USB3)
     if(WIN32)
         # include_directories(${PGR_DIR}/include)
-        include_directories(${PGR_INCLUDE_DIRS})
+        # include_directories(${PGR_INCLUDE_DIRS})
+        list(APPEND FICTRAC_INCLUDE_DIRS ${PGR_INCLUDE_DIRS})
     else()
         if(PGR_USB2)
-            include_directories(${PGR_DIR}/include/flycapture)   # for ubuntu default install dir
+            # include_directories(${PGR_DIR}/include/flycapture)   # for ubuntu default install dir
+            list(APPEND FICTRAC_INCLUDE_DIRS ${PGR_DIR}/include/flycapture)
         elseif(PGR_USB3)
-            include_directories(${PGR_DIR}/include/spinnaker)   # for ubuntu default install dir
+            # include_directories(${PGR_DIR}/include/spinnaker)   # for ubuntu default install dir
+            list(APPEND FICTRAC_INCLUDE_DIRS ${PGR_DIR}/include/spinnaker)
         endif()
     endif()
 elseif(BASLER_USB3)
-    include_directories(${BASLER_DIR}/include)
+    # include_directories(${BASLER_DIR}/include)
+    list(APPEND FICTRAC_INCLUDE_DIRS ${BASLER_DIR}/include)
 endif()
 
 # find sources to build
-file(GLOB LIBFICTRAC_SRCS ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB LIBFICTRAC_SRCS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 # add targets
 add_library(fictrac_core STATIC ${LIBFICTRAC_SRCS})
 add_executable(configGui ${PROJECT_SOURCE_DIR}/exec/configGui.cpp)
 add_executable(fictrac ${PROJECT_SOURCE_DIR}/exec/fictrac.cpp)
+
+# Set target-specific include directories
+target_include_directories(fictrac_core PUBLIC ${FICTRAC_INCLUDE_DIRS})
+
+# Set output directories as target properties
+set_target_properties(fictrac_core PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib
+)
+
+set_target_properties(configGui fictrac PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
+)
 
 # add preprocessor definitions
 # PUBLIC means defs will be inherited by linked executables
@@ -176,32 +200,39 @@ elseif(BASLER_USB3)
 endif()
 
 # add compile options
+target_compile_features(fictrac_core PUBLIC cxx_std_17)
+
+target_compile_options(fictrac_core PUBLIC 
+    $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:
+        /MP /GS /GL /W3 /wd4244 /WX- /Gy /Zc:wchar_t /O2 /Oi /Zc:inline /fp:precise /MD /EHsc
+    >
+    $<$<CXX_COMPILER_ID:GNU>:
+        -Ofast -w -fmessage-length=0 -Wno-unused-function -march=native
+    >
+)
+
 if(WIN32)
-    target_compile_options(fictrac_core PUBLIC $<$<CONFIG:Release>:/MP /GS /GL /W3 /WX- /Gy /Zc:wchar_t /O2 /Oi /Zc:inline /fp:precise /MD /EHsc /std:c++17>)
     # Add corresponding linker options for Release builds
     target_link_options(fictrac_core PUBLIC $<$<CONFIG:Release>:/LTCG>)
-else()  # gcc
-    target_compile_options(fictrac_core PUBLIC -Ofast -w -c -fmessage-length=0 -std=c++17 -Wno-unused-function -march=native -MMD)
 endif()
 
 # linking
-target_link_libraries(fictrac_core PUBLIC ${OpenCV_LIBS} ${NLOPT_LIBRARIES})
-if(WIN32)
-    target_link_libraries(fictrac_core PUBLIC Ws2_32)
-else()  # gcc
-    target_link_libraries(fictrac_core PUBLIC pthread)
-endif()
+target_link_libraries(fictrac_core PUBLIC 
+    ${OpenCV_LIBS} 
+    ${NLOPT_LIBRARIES}
+    $<$<PLATFORM_ID:Windows>:Ws2_32>
+    $<$<PLATFORM_ID:Linux>:pthread>
+)
+
 if(PGR_USB2 OR PGR_USB3)
-    # target_link_libraries(fictrac_core PUBLIC ${PGR_LIB})
     target_link_libraries(fictrac_core PUBLIC ${PGR_LIBRARIES})
 elseif(BASLER_USB3)
     target_link_libraries(fictrac_core PUBLIC ${BASLER_LIBS})
 endif()
 
-target_link_libraries(configGui fictrac_core)
-add_dependencies(configGui fictrac_core)
-target_link_libraries(fictrac fictrac_core)
-add_dependencies(fictrac fictrac_core)
+# Link executables to core library (dependencies are handled automatically)
+target_link_libraries(configGui PRIVATE fictrac_core)
+target_link_libraries(fictrac PRIVATE fictrac_core)
 
 # Apply linker options to executables on Windows
 if(WIN32)
