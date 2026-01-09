@@ -341,7 +341,7 @@ endif()
 # Optional: Create install rules for DLLs
 if(WIN32)
     install(TARGETS configGui fictrac
-        RUNTIME DESTINATION bin
+        RUNTIME DESTINATION .
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
     )
@@ -349,8 +349,23 @@ if(WIN32)
     # Install required DLLs
     if(EXISTS "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/bin")
         install(DIRECTORY "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/bin/"
-            DESTINATION bin
+            DESTINATION .
             FILES_MATCHING PATTERN "*.dll"
         )
     endif()
+
+    set(CPACK_PACKAGE_NAME "FicTrac")
+    set(CPACK_PACKAGE_VENDOR "FicTrac")
+    set(CPACK_PACKAGE_VERSION "2.2")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "webcam-based tracker of spherical motion")
+
+    set(CPACK_GENERATOR "NSIS;ZIP")
+
+    set(CPACK_NSIS_MODIFY_PATH ON)
+
+    set(CPACK_NSIS_PACKAGE_NAME "FicTrac Tracking System")
+
+    include(CPack)
+
 endif()
+
