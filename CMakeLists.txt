@@ -41,7 +41,7 @@ endif()
 
 # find dependencies
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${OPENCV_DIR} ${NLOPT_DIR})
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs highgui videoio calib3d)
 find_package(NLopt CONFIG REQUIRED)
 if(NLopt_FOUND)
     get_filename_component(NLopt_INCLUDE_DIRS "${NLOPT_CONFIG_FILE}/../../../include" REALPATH)
@@ -113,7 +113,7 @@ if(PGR_USB2 OR PGR_USB3)
         if(PGR_USB2)
             include_directories(${PGR_DIR}/include/flycapture)   # for ubuntu default install dir
         elseif(PGR_USB3)
-            include_directories(${PGR_DIR}/include/spinnaker)   # for ubuntu default install dir
+            include_directories(${PGR_DIR}/include)   # Spinnaker 4.x ubuntu default install dir
         endif()
     endif()
 elseif(BASLER_USB3)

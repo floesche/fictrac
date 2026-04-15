@@ -80,6 +80,9 @@ PGRSource::PGRSource(int index)
             LOG_DBG("Acquisition mode set to continuous.");
         }
 
+        // Configure image processor (Spinnaker 4.x: IImage::Convert moved to ImageProcessor)
+        _imageProcessor.SetColorProcessing(SPINNAKER_COLOR_PROCESSING_ALGORITHM_NEAREST_NEIGHBOR);
+
         // Begin acquiring images
         _cam->BeginAcquisition();
 
@@ -269,7 +272,7 @@ bool PGRSource::grab(cv::Mat& frame)
 
     try {
         // Convert image
-        ImagePtr bgr_image = pgr_image->Convert(PixelFormat_BGR8, NEAREST_NEIGHBOR);
+        ImagePtr bgr_image = _imageProcessor.Convert(pgr_image, PixelFormat_BGR8);
 
         Mat tmp(_height, _width, CV_8UC3, bgr_image->GetData(), bgr_image->GetStride());
         tmp.copyTo(frame);
