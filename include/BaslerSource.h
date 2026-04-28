@@ -4,7 +4,7 @@
 /// \author     Wenbin Yang
 /// \copyright  CC BY-NC-SA 3.0
 
-#if defined(BASLER_USB3)
+#if defined(PYLON)
 
 #pragma once
 
@@ -32,4 +32,4 @@ public:
     Pylon::CInstantCamera _cam;
 };
 
-#endif // BASLER_USB3
+#endif // PYLON

@@ -4,18 +4,18 @@
 /// \author     Richard Moore
 /// \copyright  CC BY-NC-SA 3.0
 
-#if defined(PGR_USB2) || defined(PGR_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER)
 
 #pragma once
 
 #include "FrameSource.h"
 
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
 #include <Spinnaker.h>
-#elif defined(PGR_USB2)
+#elif defined(FLYCAPTURE)
 #include <FlyCapture2.h>
 #include <memory>
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
 
 #include <opencv2/opencv.hpp>
 
@@ -30,13 +30,14 @@ public:
 	virtual bool grab(cv::Mat& frame);
 
 private:
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
     Spinnaker::SystemPtr _system;
     Spinnaker::CameraList _camList;
     Spinnaker::CameraPtr _cam;
-#elif defined(PGR_USB2)
+    Spinnaker::ImageProcessor _imageProcessor;
+#elif defined(FLYCAPTURE)
     std::shared_ptr<FlyCapture2::Camera> _cam;
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
 };
 
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER

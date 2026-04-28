@@ -16,11 +16,11 @@
 #include "BasicRemapper.h"
 #include "misc.h"
 #include "CVSource.h"
-#if defined(PGR_USB2) || defined(PGR_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER)
 #include "PGRSource.h"
-#elif defined(BASLER_USB3)
+#elif defined(PYLON)
 #include "BaslerSource.h"
-#endif // PGR/BASLER
+#endif // FLYCAPTURE/SPINNAKER/PYLON
 
 /// OpenCV individual includes required by gcc?
 #include <opencv2/highgui.hpp>
@@ -113,24 +113,24 @@ Trackball::Trackball(string cfg_fn, string src_override)
     }
     shared_ptr<FrameSource> source;
     // try specific camera sdk first if available
-#if defined(PGR_USB2) || defined(PGR_USB3) || defined(BASLER_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER) || defined(PYLON)
     try {
         if (src_fn.size() > 2) { throw std::exception(); }
         // first try reading input as camera id
         int id = std::stoi(src_fn);
-#if defined(PGR_USB2) || defined(PGR_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER)
         source = make_shared<PGRSource>(id);
-#elif defined(BASLER_USB3)
+#elif defined(PYLON)
         source = make_shared<BaslerSource>(id);
-#endif // PGR/BASLER
+#endif // FLYCAPTURE/SPINNAKER/PYLON
     }
     catch (...) {
         // fall back to OpenCV
         source = make_shared<CVSource>(src_fn);
     }
-#else // !PGR/BASLER
+#else // !FLYCAPTURE/SPINNAKER/PYLON
     source = make_shared<CVSource>(src_fn);
-#endif // PGR/BASLER
+#endif // FLYCAPTURE/SPINNAKER/PYLON
     if (!source->isOpen()) {
         LOG_ERR("Error! Could not open input frame source (%s)!", src_fn.c_str());
         _active = false;

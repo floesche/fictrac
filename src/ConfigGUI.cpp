@@ -16,9 +16,9 @@
 #include "timing.h"
 #include "misc.h"
 #include "CVSource.h"
-#if defined(PGR_USB2) || defined(PGR_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER)
 #include "PGRSource.h"
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
 
 /// OpenCV individual includes required by gcc?
 #include <opencv2/highgui.hpp>
@@ -173,7 +173,7 @@ ConfigGui::ConfigGui(string config_fn, string src_override)
     }
 
     /// Open the image source.
-#if defined(PGR_USB2) || defined(PGR_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER)
     try {
         if (input_fn.size() > 2) { throw std::exception(); }
         // first try reading input as camera id
@@ -184,9 +184,9 @@ ConfigGui::ConfigGui(string config_fn, string src_override)
         // then try loading as video file
         _source = std::make_shared<CVSource>(input_fn);
     }
-#else // !PGR_USB2/3
+#else // !FLYCAPTURE/SPINNAKER
     _source = std::make_shared<CVSource>(input_fn);
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
     if (!_source || !_source->isOpen()) {
         LOG_ERR("Error! Could not open input frame source (%s)!", input_fn.c_str());
         return;

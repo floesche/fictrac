@@ -41,9 +41,15 @@ vsbuild/
 gccbuild/
 bin/
 build/
+.pixi/
 
 # Data
 data
 *.dat
 *.log
 include/fictrac_version.h
+
+
+# Local files
+doc/*
+fictrac-*png

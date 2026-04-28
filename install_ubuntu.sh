@@ -1,58 +1,40 @@
 #!/bin/sh
+set -e
 
 echo
 echo "+------------------------------+"
-echo "|    FicTrac install script    |"
+echo "|    FicTrac install (pixi)    |"
 echo "+------------------------------+"
 echo
 
-# Get Ubuntu version	
-ver="$(lsb_release -sr)"
-echo "Found Ubuntu version $ver"
+cd "$(dirname "$0")"
 
-if [ "$ver" = "22.04" ] || [ "$ver" = "20.04" ]; then
-	echo
-	echo "+-- Installing dependencies ---+"
-	echo
-	sudo apt-get update
-	sudo apt-get install -y gcc g++ cmake libavcodec-dev libnlopt-dev libboost-dev libopencv-dev
-	
-	echo
-	echo "+-- Creating build directory --+"
-	echo
-	FICTRAC_DIR="$(dirname "$0")"
-	cd "$FICTRAC_DIR"	# make sure we are in fictrac dir
-	if [ -d ./build ]; then
-		echo "Removing existing build dir"
-		rm -r ./build
-	fi
-	mkdir build
-	if [ -d ./build ]; then
-		echo "Created build dir"
-		cd ./build
-	else
-		echo "Uh oh, something went wrong attempting to create the build dir!"
-		exit
-	fi
-	
-	echo
-	echo "+-- Generating build files ----+"
-	echo
-	cmake ..
-	
-	echo
-	echo "+-- Building FicTrac ----------+"
-	echo
-	cmake --build . --config Release --parallel $(nproc) --clean-first
-	
-	cd ..
-	if [ -f ./bin/fictrac ]; then
-		echo
-		echo "FicTrac built successfully!"
-		echo
-	else
-		echo
-		echo "Hmm... something seems to have gone wrong - can't find FicTrac executable."
-		echo
-	fi
+# 1. Bootstrap pixi if missing (no sudo required; installs to ~/.pixi)
+if ! command -v pixi >/dev/null 2>&1; then
+    echo "+-- Installing pixi -----------+"
+    curl -fsSL https://pixi.sh/install.sh | sh
+    export PATH="$HOME/.pixi/bin:$PATH"
+    if ! command -v pixi >/dev/null 2>&1; then
+        echo "Failed to install pixi. Add ~/.pixi/bin to PATH and retry."
+        exit 1
+    fi
+fi
+
+# 2. Resolve dependencies into .pixi/envs/default
+echo
+echo "+-- Resolving dependencies ----+"
+pixi install
+
+# 3. Configure + build
+echo
+echo "+-- Building FicTrac ----------+"
+pixi run build
+
+# 4. Smoke check
+echo
+if [ -x ./build/fictrac ]; then
+    echo "FicTrac built successfully -> ./build/fictrac"
+else
+    echo "Build failed: ./build/fictrac not found"
+    exit 1
 fi

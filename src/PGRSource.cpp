@@ -4,26 +4,26 @@
 /// \author     Richard Moore
 /// \copyright  CC BY-NC-SA 3.0
 
-#if defined(PGR_USB2) || defined(PGR_USB3)
+#if defined(FLYCAPTURE) || defined(SPINNAKER)
 
 #include "PGRSource.h"
 
 #include "Logger.h"
 #include "timing.h"
 
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
 #include "SpinGenApi/SpinnakerGenApi.h"
 using namespace Spinnaker;
-#elif defined(PGR_USB2)
+#elif defined(FLYCAPTURE)
 using namespace FlyCapture2;
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
 
 using cv::Mat;
 
 PGRSource::PGRSource(int index)
 {
     try {
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
         // Retrieve singleton reference to system object
         _system = System::GetInstance();
 
@@ -80,6 +80,9 @@ PGRSource::PGRSource(int index)
             LOG_DBG("Acquisition mode set to continuous.");
         }
 
+        // Configure image processor (Spinnaker 4.x: IImage::Convert moved to ImageProcessor)
+        _imageProcessor.SetColorProcessing(SPINNAKER_COLOR_PROCESSING_ALGORITHM_NEAREST_NEIGHBOR);
+
         // Begin acquiring images
         _cam->BeginAcquisition();
 
@@ -87,7 +90,7 @@ PGRSource::PGRSource(int index)
         _width = _cam->Width();
         _height = _cam->Height();
         _fps = getFPS();
-#elif defined(PGR_USB2)
+#elif defined(FLYCAPTURE)
         LOG_DBG("Looking for camera at index %d...", index);
 
         BusManager busMgr;
@@ -133,18 +136,18 @@ PGRSource::PGRSource(int index)
         _width = testImg.GetCols();
         _height = testImg.GetRows();
         _fps = getFPS();
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
 
         LOG("PGR camera initialised (%dx%d @ %.3f fps)!", _width, _height, _fps);
 
         _open = true;
         _live = true;
     }
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
     catch (Spinnaker::Exception& e) {
         LOG_ERR("Error opening capture device! Error was: %s", e.what());
     }
-#endif // PGR_USB3
+#endif // SPINNAKER
     catch (...) {
         LOG_ERR("Error opening capture device!");
     }
@@ -154,36 +157,36 @@ PGRSource::~PGRSource()
 {
     if (_open) {
         try {
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
             _cam->EndAcquisition();
-#elif defined(PGR_USB2)
+#elif defined(FLYCAPTURE)
             _cam->StopCapture();
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
         }
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
         catch (Spinnaker::Exception& e) {
             LOG_ERR("Error ending acquisition! Error was: %s", e.what());
         }
-#endif // PGR_USB3
+#endif // SPINNAKER
         catch (...) {
             LOG_ERR("Error ending acquisition!");
         }
         _open = false;
     }
 
-#if defined(PGR_USB2)
+#if defined(FLYCAPTURE)
     _cam->Disconnect();
-#endif // PGR_USB2
+#endif // FLYCAPTURE
 
     _cam = NULL;
 
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
     // Clear camera list before releasing system
     _camList.Clear();
 
     // Release system
     _system->ReleaseInstance();
-#endif // PGR_USB3
+#endif // SPINNAKER
     
 }
 
@@ -191,7 +194,7 @@ double PGRSource::getFPS()
 {
     double fps = _fps;
     if (_open) {
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
         try {
             fps = _cam->AcquisitionResultingFrameRate();
         }
@@ -201,7 +204,7 @@ double PGRSource::getFPS()
         catch (...) {
             LOG_ERR("Error retrieving camera frame rate!");
         }
-#endif // PGR_USB3
+#endif // SPINNAKER
     }
     return fps;
 }
@@ -210,7 +213,7 @@ bool PGRSource::setFPS(double fps)
 {
     bool ret = false;
     if (_open && (fps > 0)) {
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
         try {
             _cam->AcquisitionFrameRateEnable.SetValue(true);
             _cam->AcquisitionFrameRate.SetValue(fps);
@@ -221,7 +224,7 @@ bool PGRSource::setFPS(double fps)
         catch (...) {
             LOG_ERR("Error setting frame rate!");
         }
-#endif // PGR_USB3
+#endif // SPINNAKER
         _fps = getFPS();
         LOG("Device frame rate is now %.2f", _fps);
         ret = true;
@@ -233,7 +236,7 @@ bool PGRSource::grab(cv::Mat& frame)
 {
 	if( !_open ) { return false; }
 
-#if defined(PGR_USB3)
+#if defined(SPINNAKER)
     ImagePtr pgr_image = NULL;
 
     try {
@@ -269,7 +272,7 @@ bool PGRSource::grab(cv::Mat& frame)
 
     try {
         // Convert image
-        ImagePtr bgr_image = pgr_image->Convert(PixelFormat_BGR8, NEAREST_NEIGHBOR);
+        ImagePtr bgr_image = _imageProcessor.Convert(pgr_image, PixelFormat_BGR8);
 
         Mat tmp(_height, _width, CV_8UC3, bgr_image->GetData(), bgr_image->GetStride());
         tmp.copyTo(frame);
@@ -289,7 +292,7 @@ bool PGRSource::grab(cv::Mat& frame)
         pgr_image->Release();
         return false;
     }
-#elif defined(PGR_USB2)
+#elif defined(FLYCAPTURE)
     Image frame_raw;
     Error error = _cam->RetrieveBuffer(&frame_raw);
     double ts = ts_ms();    // backup, in case the device timestamp is junk
@@ -313,7 +316,7 @@ bool PGRSource::grab(cv::Mat& frame)
     Mat frame_cv(frame_bgr.GetRows(), frame_bgr.GetCols(), CV_8UC3, frame_bgr.GetData(), frame_bgr.GetStride());
     frame_cv.copyTo(frame);
     return true;
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER
 }
 
-#endif // PGR_USB2/3
+#endif // FLYCAPTURE/SPINNAKER

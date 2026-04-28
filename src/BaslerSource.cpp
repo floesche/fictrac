@@ -4,7 +4,7 @@
 /// \author     Wenbin Yang, Richard Moore
 /// \copyright  CC BY-NC-SA 3.0
 
-#if defined(BASLER_USB3)
+#if defined(PYLON)
 
 #include "BaslerSource.h"
 
@@ -148,4 +148,4 @@ bool BaslerSource::grab(cv::Mat& frame)
     return true;
 }
 
-#endif // BASLER_USB3
+#endif // PYLON

@@ -1,0 +1,37 @@
+[workspace]
+name = "fictrac"
+description = "Webcam-based fictive path integration for tethered insects"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[dependencies]
+# C++ toolchain (resolves to gcc/g++ on Linux, AppleClang on macOS, MSVC on Windows)
+cxx-compiler     = "*"
+cmake            = ">=3.21"
+# FicTrac C++ library deps
+nlopt            = "*"   # provides NLoptConfig.cmake → NLopt::nlopt
+libboost-devel   = "*"   # header-only Boost.Asio + BoostConfig.cmake
+libopencv        = "*"   # provides OpenCVConfig.cmake; pulls ffmpeg transitively
+
+[tasks]
+# All builds share ./build. Each `configure-*` task sets every camera-SDK
+# flag explicitly so that switching SDKs overrides the cached value from a
+# previous configure.
+
+# Default build (OpenCV camera input only)
+configure = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=OFF -DPYLON=OFF"
+build     = { cmd = "cmake --build build --parallel", depends-on = ["configure"] }
+
+# FLIR Spinnaker SDK build (auto-detects /opt/spinnaker etc.)
+configure-spinnaker = "cmake -S . -B build -DSPINNAKER=ON  -DFLYCAPTURE=OFF -DPYLON=OFF"
+build-spinnaker     = { cmd = "cmake --build build --parallel", depends-on = ["configure-spinnaker"] }
+
+# FLIR FlyCapture SDK build (legacy USB2 PGR cameras; needs -DPGR_DIR=...)
+configure-flycapture = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=ON  -DPYLON=OFF"
+build-flycapture     = { cmd = "cmake --build build --parallel", depends-on = ["configure-flycapture"] }
+
+# Basler Pylon SDK build (needs -DBASLER_DIR=...)
+configure-pylon = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=OFF -DPYLON=ON"
+build-pylon     = { cmd = "cmake --build build --parallel", depends-on = ["configure-pylon"] }
+
+clean = "cmake -E rm -rf build"

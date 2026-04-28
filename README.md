@@ -50,21 +50,40 @@ FicTrac imposes no requirements on the *italicised* items; how you design these 
 ## FicTrac software
 ### Installation
 
-The FicTrac source code can be built for both Windows and Linux (e.g. Ubuntu) operating systems, or you can build and run FicTrac from within the Windows Subsystem for Linux (WSL) or a virtual machine on any operating system.
+The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) — no `sudo` and no operating-system-specific package commands required.
+
+#### Quickstart (pixi, all platforms)
+
+1. Clone the repository:
+```
+git clone <THIS REPOSITORY URL>
+cd fictrac
+```
+2. Install pixi if you don't already have it (one-line installer, no admin rights needed): see https://pixi.sh/latest/installation/.
+3. Build:
+```
+pixi run build
+```
+The first run downloads the toolchain + libraries (~500 MB into `.pixi/`); subsequent runs are cached. The `fictrac` and `configGui` executables land in `./build/`.
+
+To build with a FLIR or BASLER camera SDK, swap the task: `pixi run build-spinnaker`, `pixi run build-flycapture`, or `pixi run build-pylon`. See the [SDK section](#industrial-camera-installation-flycapture--spinnaker--pylon) below for the SDK install details.
+
+#### Platform notes
 
 <details>
     <summary>Ubuntu 20.04 & Ubuntu 22.04</summary>
-These instructions have been tested for Ubuntu 20.04 and 22.04 within Windows Subsystem for Linux (WSL2), but should also apply to bootable installs and virtual machines.
+These instructions have been tested for Ubuntu 20.04 and 22.04, including within Windows Subsystem for Linux (WSL2).
 
-1. Clone the FicTrac repository into a new folder named `fictrac` (Git should already be installed - if not, you can install it via ```sudo apt-get install git``` or you can simply manually download and extract the repository)
+1. Clone the FicTrac repository (Git should already be installed — if not, you can install it via ```sudo apt-get install git``` or you can simply manually download and extract the repository):
 ```
-git clone https://github.com/rjdmoore/fictrac.git
+git clone <THIS REPOSITORY URL>
 ```
-2. Navigate to the `fictrac` folder and run the install script to install dependencies and build FicTrac.
+2. Navigate to the `fictrac` folder and run the install script. It bootstraps pixi (if missing) and runs `pixi run build`.
 ```
 cd fictrac
 ./install_ubuntu.sh
 ```
+You can also follow the [pixi quickstart](#quickstart-pixi-all-platforms) directly — the install script is just a thin wrapper around it.
 </details>
 
 <details>
@@ -82,9 +101,9 @@ These instructions will install Ubuntu within the Windows Subsystem for Linux (W
     <summary>Windows 10</summary>
 These instructions have been tested for Windows 10 (22H2).
 
-1. Download and install [MSYS2](https://www.msys2.org/)
+1. Download and install [MSYS2](https://www.msys2.org/)https://github.com/rjdmoore/fictrac.git
 2. Download and install [Cmake](https://cmake.org/download/) (Windows x64 installer)
-3. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and extract the repository)
+3. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and exhttps://github.com/rjdmoore/fictrac.gittract the repository)
 ```
 git clone https://github.com/rjdmoore/fictrac.git
 ```
@@ -118,26 +137,23 @@ These instructions have been tested for Windows 10, Ubuntu 18.04, and Ubuntu 20.
 [Windows] .\vcpkg install opencv[ffmpeg]:x64-windows nlopt:x64-windows boost-asio:x64-windows ffmpeg[x264]:x64-windows
 [Linux] ./vcpkg install nlopt:x64-linux boost-asio:x64-linux
 ```
-2. Clone or download the FicTrac repository, then navigate to that folder, open a terminal, and create a build directory:
+2. Clone or download the FicTrac repository:
 ```
-git clone https://github.com/rjdmoore/fictrac.git
+git clone <THIS REPOSITORY URL>
 cd fictrac
-mkdir build
-cd build
 ```
-3. Run Cmake to prepare the necessary build files for FicTrac. Here, we will need to provide the path to the Cmake toolchain file that was installed by Vcpkg (this path is printed to terminal when you run the Vcpkg system-wide integration step).
+3. Run CMake to prepare the build files. You'll need to provide the path to the CMake toolchain file installed by Vcpkg (this path is printed to terminal when you run the Vcpkg system-wide integration step).
 ```
-[Windows] cmake -A x64 -D CMAKE_TOOLCHAIN_FILE=C:\path\to\vcpkg\scripts\buildsystems\vcpkg.cmake ..
-[Linux] cmake -D CMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+[Windows] cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=C:\path\to\vcpkg\scripts\buildsystems\vcpkg.cmake
+[Linux]   cmake -S . -B build -D CMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
-5. Finally, build and install FicTrac:
+4. Build:
 ```
-[Windows] cmake --build . --config Release -j 4
-[Linux] cmake --build . --config Release -- -j 4
+cmake --build build --config Release --parallel
 ```
 </details>
 
-If everything went well, the executables for FicTrac and a configuration utility will be placed under the `bin` directory in the FicTrac project folder.
+If everything went well, the `fictrac` and `configGui` executables will be in the `build` directory (or `build/Release/` when building with the Visual Studio generator on Windows).
 
 If you encounter issues during the build process, try simply re-executing the step that failed. If you still encounter the same problem, check the [FicTrac forum](http://www.reddit.com/r/fictrac/) to see if anyone else has encountered (and hopefully solved!) the same issue. 
 
@@ -147,34 +163,54 @@ Remember to update (i.e. clone) and re-build FicTrac occasionally, as the progra
 <!---| --- | --- | --- | --- | --- |-->
 <!---| Build status | Windows | [![Build Status](https://dev.azure.com/rjdmoore/FicTrac/_apis/build/status/rjdmoore.fictrac?branchName=master&jobName=Windows)](https://dev.azure.com/rjdmoore/FicTrac/_build/latest?definitionId=1&branchName=master) | Linux | [![Build Status](https://dev.azure.com/rjdmoore/FicTrac/_apis/build/status/rjdmoore.fictrac?branchName=master&jobName=Linux)](https://dev.azure.com/rjdmoore/FicTrac/_build/latest?definitionId=1&branchName=master) |-->
 
-#### USB2/3 camera installation
+#### Industrial camera installation (FlyCapture / Spinnaker / Pylon)
 
-If you are using an industrial USB2/3 camera and are receiving error messages when FicTrac tries to connect to your camera, you may need to tell FicTrac to use the SDK provided with your camera, rather than the generic OpenCV interface. The instructions for switching to the camera's SDK are different for each manufacturer. Currently there is support for PGR (FLIR) USB2/3 cameras via the Flycapture/Spinnaker SDK and Basler USB3 cameras via the Pylon SDK.
+If you are using an industrial camera and are receiving error messages when FicTrac tries to connect to your camera, you may need to tell FicTrac to use the SDK provided with your camera, rather than the generic OpenCV interface. The instructions for switching to the camera's SDK are different for each manufacturer. Currently there is support for FLIR/PGR cameras via the Spinnaker SDK or the legacy FlyCapture SDK, and for Basler cameras via the Pylon SDK.
 
-Click on the appropriate SDK below to view details.
+Each SDK has a matching pixi task and CMake option:
+
+| SDK              | pixi task                    | CMake option        | Notes                                                              |
+| ---------------- | ---------------------------- | ------------------- | ------------------------------------------------------------------ |
+| FLIR Spinnaker   | `pixi run build-spinnaker`   | `-D SPINNAKER=ON`   | Auto-detected on Linux (`/opt/spinnaker`, `/usr`) and Windows      |
+| FLIR FlyCapture  | `pixi run build-flycapture`  | `-D FLYCAPTURE=ON`  | Legacy USB2 PGR cameras; provide `-D PGR_DIR=...`                  |
+| Basler Pylon     | `pixi run build-pylon`       | `-D PYLON=ON`       | Provide `-D BASLER_DIR=...`                                        |
+
+All four pixi tasks (`build`, `build-spinnaker`, `build-flycapture`, `build-pylon`) share the same `./build` directory; switching tasks reconfigures cleanly. Click on the appropriate SDK below for details.
 
 <details>
-  <summary>PGR (FLIR) Flycapture SDK</summary>
+  <summary>FLIR (PGR) Spinnaker SDK</summary>
 
-1. Download and install the latest [Flycapture SDK](https://www.flir.com/products/flycapture-sdk/).
-2. When preparing the build files for FicTrac using Cmake, you will need to specify to use Flycapture using the switch `-D PGR_USB2=ON` and depending on where you installed the SDK, you may also need to provide the SDK directory path using the switch `-D PGR_DIR=...`. For example, for a Windows installation you would replace step 3 above with (replacing <vcpkg_root> with the path to your vcpkg root directory):
+1. Download and install the latest [Spinnaker SDK](https://www.flir.com/products/spinnaker-sdk/). The SDK is proprietary and not on conda-forge, so this step is independent of pixi.
+2. Build with the Spinnaker task:
 ```
-cmake -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D PGR_USB2=ON -D PGR_DIR="C:\path\to\Flycapture" ..
+pixi run build-spinnaker
 ```
-3. Follow the other build steps as normal.
+The SDK is auto-detected in the standard install locations (`/opt/spinnaker`, `/usr`, `C:\Program Files\Teledyne\Spinnaker`, etc.). If you installed it somewhere unusual, point CMake at it via `Spinnaker_ROOT` (or the legacy `PGR_DIR`):
+```
+Spinnaker_ROOT="C:\path\to\Spinnaker" pixi run build-spinnaker
+```
+3. (vcpkg path, no pixi) — replace step 2 with:
+```
+cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D SPINNAKER=ON -D Spinnaker_ROOT="C:\path\to\Spinnaker"
+cmake --build build --parallel
+```
 
 Before running FicTrac, you may configure your camera (frame rate, resolution, etc) as desired using the SDK utilities.
 </details>
 
 <details>
-  <summary>PGR (FLIR) Spinnaker SDK</summary>
+  <summary>FLIR (PGR) FlyCapture SDK (legacy USB2 cameras)</summary>
 
-1. Download and install the latest [Spinnaker SDK](https://www.flir.com/products/spinnaker-sdk/).
-2. When preparing the build files for FicTrac using Cmake, you will need to specify to use Spinnaker using the switch `-D PGR_USB3=ON` and depending on where you installed the SDK, you may also need to provide the SDK directory path using the switch `-D PGR_DIR=...`. For example, for a Windows installation you would replace step 3 above with (replacing <vcpkg_root> with the path to your vcpkg root directory):
+1. Download and install the latest [FlyCapture SDK](https://www.flir.com/products/flycapture-sdk/). The SDK is proprietary and not on conda-forge.
+2. Build with the FlyCapture task. The CMake option requires `PGR_DIR` to be set unless the SDK is in the system default location:
 ```
-cmake -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D PGR_USB3=ON -D PGR_DIR="C:\path\to\Spinnaker" ..
+PGR_DIR=/path/to/FlyCapture pixi run build-flycapture
 ```
-3. Follow the other build steps as normal.
+3. (vcpkg path, no pixi) — replace step 2 with:
+```
+cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D FLYCAPTURE=ON -D PGR_DIR="C:\path\to\FlyCapture"
+cmake --build build --parallel
+```
 
 Before running FicTrac, you may configure your camera (frame rate, resolution, etc) as desired using the SDK utilities.
 </details>
@@ -182,12 +218,16 @@ Before running FicTrac, you may configure your camera (frame rate, resolution, e
 <details>
   <summary>Basler Pylon SDK</summary>
 
-1. Download and install the latest [Pylon SDK](https://www.baslerweb.com/en/products/software/basler-pylon-camera-software-suite/).
-2. When preparing the build files for FicTrac using Cmake, you will need to specify to use Pylon using the switch `-D BASLER_USB3=ON` and depending on where you installed the SDK, you may also need to provide the SDK directory path using the switch `-D BASLER_DIR=...`. For example, for a Windows installation you would replace step 3 above with (replacing <vcpkg_root> with the path to your vcpkg root directory):
+1. Download and install the latest [Pylon SDK](https://www.baslerweb.com/en/products/software/basler-pylon-camera-software-suite/). The SDK is proprietary and not on conda-forge.
+2. Build with the Pylon task. The CMake option requires `BASLER_DIR` to be set unless the SDK is in the system default location:
 ```
-cmake -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D BASLER_USB3=ON -D BASLER_DIR="C:\path\to\Pylon" ..
+BASLER_DIR=/path/to/Pylon pixi run build-pylon
 ```
-3. Follow the other build steps as normal.
+3. (vcpkg path, no pixi) — replace step 2 with:
+```
+cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D PYLON=ON -D BASLER_DIR="C:\path\to\Pylon"
+cmake --build build --parallel
+```
 
 Before running FicTrac, you may configure your camera (frame rate, resolution, etc) as desired using the SDK utilities.
 </details>
@@ -205,15 +245,15 @@ A more [detailed guide](doc/requirements.md) on how to configure FicTrac for you
 To configure FicTrac for the provided sample data, simply open a terminal in the FicTrac project folder and type:
 ```
 cd sample
-[Windows] ..\bin\Release\configGui.exe config.txt
-[Linux] ../bin/configGui config.txt
+[Windows] ..\build\Release\configGui.exe config.txt
+[Linux] ../build/configGui config.txt
 ```
 The sample config file `config.txt` is already configured for the sample data, but you can step through the configuration process to check that everything looks ok.
 
 Then, to run FicTrac, type:
 ```
-[Windows] ..\bin\Release\fictrac.exe config.txt
-[Linux] sudo ../bin/fictrac config.txt
+[Windows] ..\build\Release\fictrac.exe config.txt
+[Linux] sudo ../build/fictrac config.txt
 ```
 
 FicTrac will usually generate two output files:
@@ -224,7 +264,7 @@ The output data file can be used for offline processing. To use FicTrac within a
 
 **Note:** For Windows installations, if the `fictrac` command returns immediately without printing anything to the terminal, try closing and reopening the terminal.
 
-**Note:** If you encounter issues trying to generate output videos (i.e. `save_raw` or `save_debug`), you might try changing the default video codec via `vid_codec` - see [config params](doc/params.md) for details. If you receive an error about a missing [H264 library](https://github.com/cisco/openh264/releases), you can download the necessary library (i.e. OpenCV 3.4.3 requires `openh264-1.7.0-win64.dll`) from the above link and place it in the `bin` folder under the FicTrac directory.
+**Note:** If you encounter issues trying to generate output videos (i.e. `save_raw` or `save_debug`), you might try changing the default video codec via `vid_codec` - see [config params](doc/params.md) for details. If you receive an error about a missing [H264 library](https://github.com/cisco/openh264/releases), you can download the necessary library (i.e. OpenCV 3.4.3 requires `openh264-1.7.0-win64.dll`) from the above link and place it next to the `fictrac` executable (i.e. inside the `build` directory).
 
 ## Research
 
