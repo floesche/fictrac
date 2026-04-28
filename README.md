@@ -50,7 +50,7 @@ FicTrac imposes no requirements on the *italicised* items; how you design these 
 ## FicTrac software
 ### Installation
 
-The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) — no `sudo` and no operating-system-specific package commands required.
+The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) — no `sudo` and no operating-system-specific package commands required. On Windows, the CMake build is compatible with Visual Studio 2019 and newer Visual Studio/MSVC releases.
 
 #### Quickstart (pixi, all platforms)
 
@@ -121,7 +121,7 @@ These instructions have been tested for Windows 10, Ubuntu 18.04, and Ubuntu 20.
 1. Download and install required build tools and dependencies:
     1. Windows only: 
         1. [Cmake build system](https://cmake.org/download/) (Windows win64-x64 Installer)
-        2. If you don't already have Visual Studio (C++ workflow) installed, you will need to install the [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019).
+        2. If you don't already have Visual Studio (C++ workflow) installed, you will need to install the [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/) (Visual Studio 2019 or newer).
     2. Linux only:
         1. Run the following from terminal to install necessary build tools and dependencies (on Ubuntu-22.04 `libavresample-dev` is not available, but apparently also not needed):
         ```
@@ -188,7 +188,7 @@ Spinnaker_ROOT="C:\path\to\Spinnaker" pixi run build-spinnaker
 3. (vcpkg path, no pixi) — replace step 2 with:
 ```
 cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D SPINNAKER=ON -D Spinnaker_ROOT="C:\path\to\Spinnaker"
-cmake --build build --parallel
+cmake --build build --config Release --parallel
 ```
 
 Before running FicTrac, you may configure your camera (frame rate, resolution, etc) as desired using the SDK utilities.
@@ -205,7 +205,7 @@ PGR_DIR=/path/to/FlyCapture pixi run build-flycapture
 3. (vcpkg path, no pixi) — replace step 2 with:
 ```
 cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D FLYCAPTURE=ON -D PGR_DIR="C:\path\to\FlyCapture"
-cmake --build build --parallel
+cmake --build build --config Release --parallel
 ```
 
 Before running FicTrac, you may configure your camera (frame rate, resolution, etc) as desired using the SDK utilities.
@@ -222,7 +222,7 @@ Pylon_ROOT=/path/to/Pylon pixi run build-pylon
 3. (vcpkg path, no pixi) — replace step 2 with:
 ```
 cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D PYLON=ON -D Pylon_ROOT="C:\path\to\Pylon"
-cmake --build build --parallel
+cmake --build build --config Release --parallel
 ```
 
 Before running FicTrac, you may configure your camera (frame rate, resolution, etc) as desired using the SDK utilities.

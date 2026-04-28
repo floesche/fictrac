@@ -9,6 +9,9 @@ project(FicTrac
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif()
 
 # Project-local Find modules (FindSpinnaker.cmake, ...)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -54,11 +57,22 @@ if(SPINNAKER)
 elseif(FLYCAPTURE)
     set(PGR_DIR "" CACHE PATH "Path to PGR FlyCapture SDK folder")
     if(WIN32)
+        set(_flycapture_hints
+            ${PGR_DIR}
+            $ENV{PGR_DIR}
+            "C:/Program Files/Point Grey Research/FlyCapture2"
+            "C:/Program Files/FLIR Systems/FlyCapture2")
         find_library(PGR_LIB
-            NAMES FlyCapture2_v140
-            PATHS "${PGR_DIR}/lib64/vs2015"
+            NAMES FlyCapture2_v143 FlyCapture2_v142 FlyCapture2_v141 FlyCapture2_v140 FlyCapture2
+            HINTS ${_flycapture_hints}
+            PATH_SUFFIXES lib64/vs2022 lib64/vs2019 lib64/vs2017 lib64/vs2015 lib64 lib
             REQUIRED)
-        target_include_directories(fictrac_camera_sdk INTERFACE "${PGR_DIR}/include")
+        find_path(PGR_INCLUDE_DIR
+            NAMES FlyCapture2.h
+            HINTS ${_flycapture_hints}
+            PATH_SUFFIXES include
+            REQUIRED)
+        target_include_directories(fictrac_camera_sdk INTERFACE "${PGR_INCLUDE_DIR}")
     else()
         find_library(PGR_LIB
             NAMES flycapture
@@ -105,14 +119,16 @@ target_compile_definitions(fictrac_core PUBLIC _CRT_SECURE_NO_WARNINGS NOMINMAX)
 if(WIN32)
     target_compile_definitions(fictrac_core PUBLIC _WIN32_WINNT=0x0A00) # Win10
 endif()
+target_compile_features(fictrac_core PUBLIC cxx_std_17)
 
 # compile options
-if(WIN32)
+if(MSVC)
     target_compile_options(fictrac_core PUBLIC
-        $<$<CONFIG:Release>:/MP /GS /GL /w /WX- /Gy /Zc:wchar_t /O2 /Oi /Zc:inline /fp:precise /MD /EHsc /std:c++17>)
+        /EHsc /GS /MP /WX- /Zc:inline /Zc:wchar_t /fp:precise /w
+        $<$<CONFIG:Release>:/GL /Gy /O2 /Oi>)
 else()
     target_compile_options(fictrac_core PUBLIC
-        -Ofast -w -c -fmessage-length=0 -std=c++17 -Wno-unused-function -march=native -MMD)
+        -Ofast -w -c -fmessage-length=0 -Wno-unused-function -march=native -MMD)
 endif()
 
 # linking
