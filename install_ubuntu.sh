@@ -20,6 +20,10 @@ if ! command -v pixi >/dev/null 2>&1; then
     fi
 fi
 
+echo
+echo "+-- Updating pixi -------------+"
+pixi self-update
+
 # 2. Resolve dependencies into .pixi/envs/default
 echo
 echo "+-- Resolving dependencies ----+"

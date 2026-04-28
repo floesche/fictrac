@@ -43,6 +43,11 @@ if (-not $pixi) {
     }
 }
 
+Write-Host
+Write-Host "+-- Updating pixi -------------+"
+Write-Host
+& pixi self-update
+
 # 2. Resolve dependencies into .pixi\envs\default
 Write-Host
 Write-Host "+-- Resolving dependencies ----+"
