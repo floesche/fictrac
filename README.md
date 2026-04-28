@@ -101,20 +101,16 @@ These instructions will install Ubuntu within the Windows Subsystem for Linux (W
     <summary>Windows 10</summary>
 These instructions have been tested for Windows 10 (22H2).
 
-1. Download and install [MSYS2](https://www.msys2.org/)https://github.com/rjdmoore/fictrac.git
-2. Download and install [Cmake](https://cmake.org/download/) (Windows x64 installer)
-3. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and exhttps://github.com/rjdmoore/fictrac.gittract the repository)
+1. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and extract the repository)
 ```
-git clone https://github.com/rjdmoore/fictrac.git
+git clone <THIS REPOSITORY URL>
 ```
-4. In a Powershell terminal, navigate to the `fictrac` folder and run the install script to install dependencies and build FicTrac.
+2. In a PowerShell terminal, navigate to the `fictrac` folder and run the install script. It bootstraps [pixi](https://pixi.sh) if needed, resolves the compiler/CMake/OpenCV/NLopt/Boost dependencies, and builds FicTrac.
 ```
 cd fictrac
-./install_windows.ps1
+powershell -ExecutionPolicy Bypass -File .\install_windows.ps1
 ```
-During installation, the script will prompt you for the MSYS2 installation path and then launch a MSYS2 terminal. The FicTrac dependencies should be installed here using the `pacman` utility. The install script will display a command which you can copy to the MSYS terminal to install the dependencies. Once the dependencies are installed, you must close the MSYS window to continue the FicTrac installation.
-
-After installation, you may need to close and re-open your Powershell terminal in order to run FicTrac.
+The first run downloads the toolchain and libraries into `.pixi\` and `%USERPROFILE%\.pixi\`. If PowerShell does not pick up the updated `PATH` immediately afterwards, close and reopen the terminal once before invoking `pixi` directly.
 
 </details>
 
@@ -219,13 +215,13 @@ Before running FicTrac, you may configure your camera (frame rate, resolution, e
   <summary>Basler Pylon SDK</summary>
 
 1. Download and install the latest [Pylon SDK](https://www.baslerweb.com/en/products/software/basler-pylon-camera-software-suite/). The SDK is proprietary and not on conda-forge.
-2. Build with the Pylon task. The CMake option requires `BASLER_DIR` to be set unless the SDK is in the system default location:
+2. Build with the Pylon task. FicTrac auto-detects the usual Pylon install locations; if your SDK lives elsewhere, point CMake at it with `Pylon_ROOT` (or the legacy `BASLER_DIR` alias):
 ```
-BASLER_DIR=/path/to/Pylon pixi run build-pylon
+Pylon_ROOT=/path/to/Pylon pixi run build-pylon
 ```
 3. (vcpkg path, no pixi) — replace step 2 with:
 ```
-cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D PYLON=ON -D BASLER_DIR="C:\path\to\Pylon"
+cmake -S . -B build -A x64 -D CMAKE_TOOLCHAIN_FILE=<vcpkg root>/scripts/buildsystems/vcpkg.cmake -D PYLON=ON -D Pylon_ROOT="C:\path\to\Pylon"
 cmake --build build --parallel
 ```
 

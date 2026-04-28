@@ -71,27 +71,16 @@ elseif(FLYCAPTURE)
     message(STATUS "Found PGR FlyCapture lib: ${PGR_LIB}")
 elseif(PYLON)
     set(BASLER_DIR "" CACHE PATH "Path to Basler Pylon SDK folder")
-    if(WIN32)
-        set(_basler_libdir "${BASLER_DIR}/Development/lib/x64")
-        find_library(BASLER_LIB
-            NAMES PylonBase_MD_VC120_v5_0
-            PATHS "${_basler_libdir}"
-            REQUIRED)
-        # Pylon's Windows SDK requires linking the full set of .lib files
-        file(GLOB BASLER_LIBS "${_basler_libdir}/*.lib")
-        target_link_libraries(fictrac_camera_sdk INTERFACE ${BASLER_LIBS})
-        target_include_directories(fictrac_camera_sdk INTERFACE "${BASLER_DIR}/include")
-    else()
-        find_library(BASLER_LIB
-            NAMES pylonbase
-            PATHS "${BASLER_DIR}/lib64"
-            REQUIRED)
-        file(GLOB BASLER_LIBS "${BASLER_DIR}/lib64/*.so")
-        target_link_libraries(fictrac_camera_sdk INTERFACE ${BASLER_LIBS})
-        target_include_directories(fictrac_camera_sdk INTERFACE "${BASLER_DIR}/include")
-    endif()
+    # Auto-detects common pylon installs. Override with -DPylon_ROOT=
+    # (or the legacy -DBASLER_DIR=) when the SDK is in a non-standard location.
+    find_package(Pylon REQUIRED)
+    target_link_libraries(fictrac_camera_sdk INTERFACE Pylon::Pylon)
     target_compile_definitions(fictrac_camera_sdk INTERFACE PYLON)
-    message(STATUS "Found Basler Pylon lib: ${BASLER_LIB}")
+    if(Pylon_VERSION)
+        message(STATUS "Found Basler Pylon ${Pylon_VERSION}")
+    else()
+        message(STATUS "Found Basler Pylon")
+    endif()
 endif()
 
 # find sources to build

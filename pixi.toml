@@ -30,7 +30,8 @@ build-spinnaker     = { cmd = "cmake --build build --parallel", depends-on = ["c
 configure-flycapture = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=ON  -DPYLON=OFF"
 build-flycapture     = { cmd = "cmake --build build --parallel", depends-on = ["configure-flycapture"] }
 
-# Basler Pylon SDK build (needs -DBASLER_DIR=...)
+# Basler Pylon SDK build (auto-detects /opt/pylon etc.; override with
+# -DPylon_ROOT= or the legacy -DBASLER_DIR=...)
 configure-pylon = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=OFF -DPYLON=ON"
 build-pylon     = { cmd = "cmake --build build --parallel", depends-on = ["configure-pylon"] }
 

@@ -1,87 +1,66 @@
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 Write-Host
 Write-Host "+------------------------------+"
-Write-Host "|    FicTrac install script    |"
+Write-Host "|    FicTrac install (pixi)    |"
 Write-Host "+------------------------------+"
 Write-Host
 
-$MSYS_DIR = Read-Host -Prompt "Enter full path to MSYS install directory (e.g. C:\msys64)"
-$MSYS_BIN_DIR = "$MSYS_DIR\mingw64\bin"
-if (Test-Path -Path $MSYS_BIN_DIR) {
-    Write-Host "Found MSYS bin dir at: $MSYS_BIN_DIR"
-}
-else {
-    Write-Host "Uh oh, couldn't find the MSYS bin dir at: $MSYS_BIN_DIR"
-    exit
-}
+Set-Location $PSScriptRoot
 
-$USER_PATH = [Environment]::GetEnvironmentVariable("Path", "User")
-if (-Not $USER_PATH.contains("$MSYS_BIN_DIR")) {
-    $Env:PATH += ";$MSYS_BIN_DIR"    # set locally in script
-    [Environment]::SetEnvironmentVariable("Path", $USER_PATH + ";$MSYS_BIN_DIR", "User")     # set permanently
-    Write-Host "MSYS bin dir added to Path variable"
-}
+function Find-FicTracExecutable {
+    $candidates = @(
+        (Join-Path $PSScriptRoot "build\fictrac.exe"),
+        (Join-Path $PSScriptRoot "build\Release\fictrac.exe"),
+        (Join-Path $PSScriptRoot "build\Debug\fictrac.exe")
+    )
 
+    foreach ($candidate in $candidates) {
+        if (Test-Path -Path $candidate -PathType Leaf) {
+            return $candidate
+        }
+    }
 
-Write-Host
-Write-Host "+-- Installing dependencies ---+"
-Write-Host
-
-Write-Host "Please copy and execute the following command in the MSYS console:"
-Write-Host
-Write-Host "pacman -Sy mingw-w64-x86_64-gcc   \"
-Write-Host "           mingw-w64-x86_64-make  \"
-Write-Host "           mingw-w64-x86_64-nlopt \"
-Write-Host "           mingw-w64-x86_64-boost \"
-Write-Host "           mingw-w64-x86_64-ffmpeg\"
-Write-Host "           mingw-w64-x86_64-opencv"
-Write-Host
-Write-Host "Close the MSYS console when all commands have completed successully"
-
-Start-Process "$MSYS_DIR\msys2_shell.cmd" -Wait
-
-
-Write-Host
-Write-Host "+-- Creating build directory --+"
-Write-Host
-$FICTRAC_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
-cd $FICTRAC_DIR    # make sure we are in fictrac dir
-if (Test-Path -Path "./build") {
-    Write-Host "Removing existing build dir"
-    Remove-Item -Recurse "./build"
-}
-$null = New-Item -ItemType Directory -Path "./build"
-if (Test-Path -Path "./build") {
-	Write-Host "Created build dir"
-	cd "./build"
-}
-else {
-	Write-Host "Uh oh, something went wrong attempting to create the build dir!"
-	exit
+    return $null
 }
 
+# 1. Bootstrap pixi if missing (no admin rights required; installs to
+#    %USERPROFILE%\.pixi\bin and updates the user PATH).
+$pixi = Get-Command pixi -ErrorAction SilentlyContinue
+if (-not $pixi) {
+    Write-Host "+-- Installing pixi -----------+"
+    & powershell -ExecutionPolicy Bypass -Command "irm -useb https://pixi.sh/install.ps1 | iex"
 
+    $pixiBinDir = Join-Path $env:USERPROFILE ".pixi\bin"
+    if ((Test-Path -Path $pixiBinDir) -and -not (($env:Path -split ";") -contains $pixiBinDir)) {
+        $env:Path = "$pixiBinDir;$env:Path"
+    }
+
+    $pixi = Get-Command pixi -ErrorAction SilentlyContinue
+    if (-not $pixi) {
+        throw "Failed to install pixi. Add $pixiBinDir to PATH and retry."
+    }
+}
+
+# 2. Resolve dependencies into .pixi\envs\default
 Write-Host
-Write-Host "+-- Generating build files ----+"
+Write-Host "+-- Resolving dependencies ----+"
 Write-Host
-cmake -G "MinGW Makefiles" --fresh ..
+& pixi install
 
-
+# 3. Configure + build
 Write-Host
 Write-Host "+-- Building FicTrac ----------+"
 Write-Host
-$NPROC = [Environment]::GetEnvironmentVariable("NUMBER_OF_PROCESSORS") 
-cmake --build . --config Release --parallel $NPROC --clean-first
+& pixi run build
 
-
-cd ..
-if (Test-Path "./bin/fictrac.exe" -PathType Leaf) {
-	Write-Host
-	Write-Host "FicTrac built successfully!"
-	Write-Host
+# 4. Smoke check
+Write-Host
+$fictracExe = Find-FicTracExecutable
+if ($null -ne $fictracExe) {
+    Write-Host "FicTrac built successfully -> $fictracExe"
 }
 else {
-	Write-Host
-	Write-Host "Hmm... something seems to have gone wrong - can't find FicTrac executable."
-	Write-Host
+    throw "Build failed: fictrac.exe not found under .\build."
 }
