@@ -123,9 +123,12 @@ target_compile_features(fictrac_core PUBLIC cxx_std_17)
 
 # compile options
 if(MSVC)
+    # Suppress vcpkg global integration: pixi manages all dependencies and
+    # vcpkg's auto-injected headers/libs would conflict with pixi's packages.
+    set(CMAKE_VS_GLOBALS "UseVcpkg=false")
     target_compile_options(fictrac_core PUBLIC
-        /EHsc /GS /MP /WX- /Zc:inline /Zc:wchar_t /fp:precise /w
-        $<$<CONFIG:Release>:/GL /Gy /O2 /Oi>)
+        /EHsc /GS /WX- /Zc:inline /Zc:wchar_t /fp:precise /w
+        $<$<CONFIG:Release>:/Gy /O2 /Oi>)
 else()
     target_compile_options(fictrac_core PUBLIC
         -Ofast -w -c -fmessage-length=0 -Wno-unused-function -march=native -MMD)
@@ -154,3 +157,45 @@ add_dependencies(fictrac fictrac_core)
     # set_target_properties(configGui PROPERTIES LINK_FLAGS /LTCG)
     # set_target_properties(fictrac PROPERTIES LINK_FLAGS /LTCG)
 # endif()
+
+# On Windows, generate a .bat launcher next to each executable.
+# The launcher prepends the runtime DLL directories to PATH for that
+# invocation so the exe finds its DLLs without requiring the pixi
+# environment to be active or DLLs to be copied into the build tree.
+#
+# Order matters. Camera-SDK bin dirs come FIRST: the FLIR/Teledyne SDKs
+# ship private copies of libcurl.dll, libiomp5md.dll and ucrtbase.dll that
+# their own DLLs require. If pixi's Library/bin (which ships different
+# versions of those same DLLs) is searched first, the SDK DLL loads the
+# wrong copy and fails with STATUS_ENTRYPOINT_NOT_FOUND (0xC0000139).
+# pixi's Library/bin goes last; its OpenCV/ffmpeg/etc. DLLs have unique
+# names so nothing shadows them.
+# Paths are resolved at configure time when pixi is active.
+if(WIN32)
+    set(_runtime_dll_dirs "")
+    # Camera-SDK runtime dir is derived from the linked import lib by
+    # swapping .../lib64/... for .../bin64/... (the SDKs mirror this layout).
+    if(SPINNAKER AND Spinnaker_LIBRARY)
+        get_filename_component(_sdk_lib_dir "${Spinnaker_LIBRARY}" DIRECTORY)
+        string(REPLACE "/lib64/" "/bin64/" _sdk_bin_dir "${_sdk_lib_dir}")
+        list(APPEND _runtime_dll_dirs "${_sdk_bin_dir}")
+    elseif(FLYCAPTURE AND PGR_LIB)
+        get_filename_component(_sdk_lib_dir "${PGR_LIB}" DIRECTORY)
+        string(REPLACE "/lib64/" "/bin64/" _sdk_bin_dir "${_sdk_lib_dir}")
+        list(APPEND _runtime_dll_dirs "${_sdk_bin_dir}")
+    endif()
+    list(APPEND _runtime_dll_dirs "$ENV{CONDA_PREFIX}/Library/bin")
+
+    # Build the semicolon-separated PATH prefix with native (backslash) paths.
+    set(_launcher_path_prefix "")
+    foreach(_dir IN LISTS _runtime_dll_dirs)
+        file(TO_NATIVE_PATH "${_dir}" _native_dir)
+        string(APPEND _launcher_path_prefix "${_native_dir};")
+    endforeach()
+
+    foreach(_target fictrac configGui)
+        file(GENERATE
+            OUTPUT "$<TARGET_FILE_DIR:${_target}>/${_target}.bat"
+            CONTENT "@echo off\nset \"PATH=${_launcher_path_prefix}%PATH%\"\n\"%~dp0${_target}.exe\" %*\n")
+    endforeach()
+endif()

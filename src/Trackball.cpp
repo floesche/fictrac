@@ -391,7 +391,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
         _roi_mask, _p1s_lut);
 
     _globalOpt = make_unique<Localiser>(
-        NLOPT_GN_CRS2_LM, CM_PI, tol, 1e5,
+        NLOPT_GN_CRS2_LM, CM_PI, tol, 100000,
         _sphere_model, _sphere_map,
         _roi_mask, _p1s_lut);
 

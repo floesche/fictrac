@@ -36,3 +36,16 @@ configure-pylon = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=OFF -DPYLON=
 build-pylon     = { cmd = "cmake --build build --config Release --parallel", depends-on = ["configure-pylon"] }
 
 clean = "cmake -E rm -rf build"
+
+# The conda cxx-compiler package hard-codes CMAKE_GENERATOR to a specific VS
+# version that may not be installed. Clearing it at task level lets cmake call
+# vswhere internally and pick the newest VS on the machine automatically.
+[target.win-64.tasks]
+configure          = { cmd = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=OFF -DPYLON=OFF", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_TOOLSET = "" } }
+configure-spinnaker  = { cmd = "cmake -S . -B build -DSPINNAKER=ON  -DFLYCAPTURE=OFF -DPYLON=OFF", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_TOOLSET = "" } }
+configure-flycapture = { cmd = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=ON  -DPYLON=OFF", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_TOOLSET = "" } }
+configure-pylon      = { cmd = "cmake -S . -B build -DSPINNAKER=OFF -DFLYCAPTURE=OFF -DPYLON=ON",  env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_TOOLSET = "" } }
+build              = { cmd = "cmake --build build --config Release --parallel", depends-on = ["configure"] }
+build-spinnaker    = { cmd = "cmake --build build --config Release --parallel", depends-on = ["configure-spinnaker"] }
+build-flycapture   = { cmd = "cmake --build build --config Release --parallel", depends-on = ["configure-flycapture"] }
+build-pylon        = { cmd = "cmake --build build --config Release --parallel", depends-on = ["configure-pylon"] }
