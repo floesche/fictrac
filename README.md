@@ -50,7 +50,7 @@ FicTrac imposes no requirements on the *italicised* items; how you design these 
 ## FicTrac software
 ### Installation
 
-The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) — no `sudo` and no operating-system-specific package commands required.
+The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) except the [camera drivers](#industrial-camera-installation-flycapture--spinnaker--pylon). No `sudo` and no operating-system-specific package commands required.
 
 On **Linux and macOS**, pixi supplies the entire toolchain, so nothing beyond pixi is required.
 
