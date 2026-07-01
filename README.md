@@ -50,7 +50,11 @@ FicTrac imposes no requirements on the *italicised* items; how you design these 
 ## FicTrac software
 ### Installation
 
-The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) — no `sudo` and no operating-system-specific package commands required. On Windows, the CMake build is compatible with Visual Studio 2019 and newer Visual Studio/MSVC releases.
+The FicTrac source code can be built for Linux, macOS, and Windows. The recommended path uses [pixi](https://pixi.sh) to manage all C++ build dependencies (compiler, CMake, OpenCV, NLopt, Boost) — no `sudo` and no operating-system-specific package commands required.
+
+On **Linux and macOS**, pixi supplies the entire toolchain, so nothing beyond pixi is required.
+
+On **Windows**, pixi supplies CMake and all libraries, but it cannot ship the MSVC compiler, the MSVC C++ standard library, or the Windows SDK (Microsoft licensing does not permit redistribution). The conda-forge C++ toolchain instead *locates* a Microsoft C++ toolchain already installed on the machine. You do **not** need the full Visual Studio IDE — the free, standalone [**Build Tools for Visual Studio**](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (2019 or newer) are sufficient. When installing, select the **"Desktop development with C++"** workload, which includes the MSVC compiler and the Windows SDK. pixi auto-detects the Build Tools; the Visual Studio IDE is not required.
 
 #### Quickstart (pixi, all platforms)
 
@@ -67,6 +71,19 @@ pixi run build
 The first run downloads the toolchain + libraries (~500 MB into `.pixi/`); subsequent runs are cached. The `fictrac` and `configGui` executables land in `./build/`.
 
 To build with a FLIR or BASLER camera SDK, swap the task: `pixi run build-spinnaker`, `pixi run build-flycapture`, or `pixi run build-pylon`. See the [SDK section](#industrial-camera-installation-flycapture--spinnaker--pylon) below for the SDK install details.
+
+A **fresh `git clone` is fully relocatable** — it builds at any path on any machine, because the build directory (`build/`) and the pixi environment (`.pixi/`) are `.gitignore`d and regenerated locally, and all committed build files use relative paths. So the clone-and-build workflow above works no matter where you clone the repository.
+
+> **Relocating or copying an existing checkout.** If instead of a clean `git clone` you *copy* an existing checkout to a new location or another machine, delete the machine-specific artifacts first — they bake in absolute paths from the original location:
+> ```
+> pixi run clean        # removes ./build (holds CMake's cached absolute paths)
+> ```
+> then delete the `.pixi/` directory (the pixi environment; pixi will recreate it on the next run):
+> ```
+> [Windows]  Remove-Item -Recurse -Force .pixi
+> [Linux]    rm -rf .pixi
+> ```
+> After that, `pixi run build` (or a `build-*` variant) reconfigures cleanly for the new location. A fresh `git clone` needs none of this, since neither directory is tracked.
 
 #### Platform notes
 
@@ -101,11 +118,12 @@ These instructions will install Ubuntu within the Windows Subsystem for Linux (W
     <summary>Windows 10</summary>
 These instructions have been tested for Windows 10 (22H2).
 
-1. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and extract the repository)
+1. Install the [**Build Tools for Visual Studio**](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (2019 or newer) if you don't already have Visual Studio or the Build Tools installed. In the installer, tick the **"Desktop development with C++"** workload (this provides the MSVC compiler and the Windows SDK that pixi's toolchain relies on). The full Visual Studio IDE is not required.
+2. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and extract the repository)
 ```
 git clone <THIS REPOSITORY URL>
 ```
-2. In a PowerShell terminal, navigate to the `fictrac` folder and run the install script. It bootstraps [pixi](https://pixi.sh) if needed, resolves the compiler/CMake/OpenCV/NLopt/Boost dependencies, and builds FicTrac.
+3. In a PowerShell terminal, navigate to the `fictrac` folder and run the install script. It bootstraps [pixi](https://pixi.sh) if needed, resolves the compiler/CMake/OpenCV/NLopt/Boost dependencies, and builds FicTrac.
 ```
 cd fictrac
 powershell -ExecutionPolicy Bypass -File .\install_windows.ps1
